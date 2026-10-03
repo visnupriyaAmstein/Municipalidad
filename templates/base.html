@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>{% block titulo %}Actividad Asignada · La Serena{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/custom.css' %}?v=3">
+</head>
+
+<body class="d-flex flex-column min-vh-100 {% block body_class %}{% endblock %}">
+
+  <nav class="navbar navbar-expand-lg navbar-spa">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="{% url 'main' %}">
+        <img src="{% static 'images/logo-iniciales-cafe.png' %}" alt="Actividad Asignada">
+      </a>
+
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSpa"
+        aria-controls="navbarSpa" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbarSpa">
+        <ul class="navbar-nav ms-auto">
+          {% if user.is_authenticated %}
+            {% if rol_usuario == 'Administrador' %}
+              <li class="nav-item"><a class="nav-link" href="{% url 'panel_admin' %}">Panel</a></li>
+              <li class="nav-item"><a class="nav-link" href="{% url 'lista_tareas' %}">Tareas</a></li>
+              <li class="nav-item"><a class="nav-link" href="{% url 'usuarios_admin' %}">Usuarios</a></li>
+            {% else %}
+              <li class="nav-item"><a class="nav-link" href="{% url 'tareas' %}">Tareas</a></li>
+              <li class="nav-item"><a class="nav-link" href="{% url 'mis_actividades' %}">Mis actividades</a></li>
+            {% endif %}
+          {% endif %}
+        </ul>
+
+        {% if user.is_authenticated %}
+        <div class="d-flex align-items-center gap-2 ms-lg-3">
+          <span class="btn btn-spa-secondary btn-sm disabled">
+            {{ user.first_name|default:user.username }} · {{ rol_usuario }}
+          </span>
+          <form action="{% url 'logout' %}" method="post" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-light btn-sm">Cerrar sesión</button>
+          </form>
+        </div>
+        {% else %}
+        <div class="d-flex align-items-center gap-2 ms-lg-3">
+          <a href="{% url 'login' %}" class="btn btn-spa-secondary btn-sm">Iniciar sesión</a>
+          <a href="{% url 'registro' %}" class="btn btn-outline-light btn-sm">Registrarse</a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </nav>
+
+  <main class="flex-grow-1 d-flex flex-column">
+    {% block contenido %}{% endblock %}
+  </main>
+
+  <footer class="footer-spa">
+    <p class="mb-0">Actividad Asignada &copy; 2026 - Ilustre Municipalidad de La Serena</p>
+  </footer>
+
+  <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+  <script src="{% static 'js/custom.js' %}?v=3"></script>
+</body>
+
+</html>

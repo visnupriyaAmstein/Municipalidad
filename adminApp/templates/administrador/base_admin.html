@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block contenido %}
+<div class="d-flex flex-column flex-grow-1">
+  <div class="panel-header d-flex align-items-center gap-2">
+    <span class="rounded-circle bg-white d-flex align-items-center justify-content-center fw-bold"
+      style="width:44px;height:44px;color:var(--color-olivo-claro)">A</span>
+    <p class="m-0 fw-semibold">Administración · Tareas municipales</p>
+  </div>
+  <div class="container-fluid flex-grow-1 d-flex flex-column">
+    <div class="row flex-grow-1">
+      <div class="col-md-3 col-lg-2 p-0 sidebar-panel">
+        <div class="titulo-menu">Menú</div>
+        <a href="{% url 'panel_admin' %}" class="{% if seccion_activa == 'panel' %}activo{% endif %}">Resumen general</a>
+        <a href="{% url 'lista_tareas' %}" class="{% if seccion_activa == 'tareas' %}activo{% endif %}">Gestión de tareas</a>
+        <a href="{% url 'usuarios_admin' %}" class="{% if seccion_activa == 'usuarios' %}activo{% endif %}">Actividades por usuario</a>
+      </div>
+      <div class="col-md-9 col-lg-10 py-4">
+        {% if messages %}{% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+          {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>{% endfor %}{% endif %}
+        {% block panel_contenido %}{% endblock %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

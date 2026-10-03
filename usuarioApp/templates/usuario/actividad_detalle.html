@@ -1,0 +1,24 @@
+{% extends 'usuario/base_cliente.html' %}
+{% block titulo %}{{ a.codigo }} · Actividad Asignada{% endblock %}
+{% block panel_contenido %}
+<a href="{% url 'mis_actividades' %}" class="btn btn-outline-secondary btn-sm mb-3">← Mis actividades</a>
+<div class="detalle-card">
+  <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+    <div>
+      <h1 class="h4 fw-bold mb-1">{{ a.tarea.titulo }}</h1>
+      <span class="badge bg-secondary">{{ a.tarea.area }}</span>
+    </div>
+    <span class="codigo-generado m-0 fs-5">{{ a.codigo }}</span>
+  </div>
+  <hr>
+  <p class="mb-1"><strong>Tarea a realizar:</strong> {{ a.tarea.descripcion|default:"—" }}</p>
+  <p class="mb-1"><strong>Fecha:</strong> {{ a.fecha|date:"d/m/Y" }}</p>
+  <p class="mb-3"><strong>Enviada:</strong> {{ a.creado|date:"d/m/Y H:i" }}</p>
+  <p class="mb-3"><strong>Lo que hice:</strong><br>{{ a.descripcion|linebreaksbr }}</p>
+  <div class="fotos-grid">
+    <figure><figcaption>Antes</figcaption><img class="foto-evidencia" src="{{ a.foto_antes.url }}" alt="Foto antes" loading="lazy"></figure>
+    <figure><figcaption>Después</figcaption><img class="foto-evidencia" src="{{ a.foto_despues.url }}" alt="Foto después" loading="lazy"></figure>
+  </div>
+  <p class="small text-muted mt-2 mb-0">Toca una foto para verla en grande.</p>
+</div>
+{% endblock %}

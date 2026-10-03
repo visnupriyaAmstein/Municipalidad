@@ -1,0 +1,143 @@
+{% extends 'usuario/base_cliente.html' %}
+{% block titulo %}Reportar actividad · Actividad Asignada{% endblock %}
+{% block panel_contenido %}
+<div class="form-wrap">
+  <div class="telefono {% if guardada %}atenuado{% endif %}" {% if guardada %}inert aria-hidden="true"{% endif %}>
+
+    <div class="telefono-top">
+      <a href="{% url 'tareas' %}" class="btn-volver" aria-label="Volver a las tareas">↩</a>
+      <h1><span class="ini">A</span>CTIVIDAD<span class="l2"><span class="ini">A</span>SIGNADA</span></h1>
+    </div>
+
+    <div class="pastilla">
+      <b>{{ tarea.titulo }}</b>
+      Asignada por administración · {{ tarea.creado|date:"d M Y" }}
+      {% if tarea.descripcion %}<div class="pastilla-desc">{{ tarea.descripcion }}</div>{% endif %}
+    </div>
+
+    <form method="post" enctype="multipart/form-data" action="{% url 'actividad_nueva' tarea.id %}" id="formActividad" novalidate>
+      {% csrf_token %}
+
+      <div class="etiqueta-naranja">Descripción del avance</div>
+      {{ form.descripcion }}
+      {% for e in form.descripcion.errors %}<div class="error-campo">{{ e }}</div>{% endfor %}
+
+      <div class="etiqueta-naranja">Fecha</div>
+      {{ form.fecha }}
+      {% for e in form.fecha.errors %}<div class="error-campo">{{ e }}</div>{% endfor %}
+
+      <div class="etiqueta-naranja">Evidencia fotográfica</div>
+      <div class="cajas-foto">
+        <label class="caja-foto" for="{{ form.foto_antes.id_for_label }}">
+          <span class="ph">
+            <svg class="icono" viewBox="0 0 24 24" fill="currentColor"><path d="M9 3 7.2 5H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.2L15 3H9zm3 5.5A4.5 4.5 0 1 1 7.5 13 4.5 4.5 0 0 1 12 8.5zm0 2A2.5 2.5 0 1 0 14.5 13 2.5 2.5 0 0 0 12 10.5z"/></svg>
+            <span class="d-block">Foto antes</span>
+          </span>
+          <span class="cambiar">Toca para cambiar</span>
+          {{ form.foto_antes }}
+        </label>
+        <label class="caja-foto" for="{{ form.foto_despues.id_for_label }}">
+          <span class="ph">
+            <svg class="icono" viewBox="0 0 24 24" fill="currentColor"><path d="M9 3 7.2 5H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.2L15 3H9zm3 5.5A4.5 4.5 0 1 1 7.5 13 4.5 4.5 0 0 1 12 8.5zm0 2A2.5 2.5 0 1 0 14.5 13 2.5 2.5 0 0 0 12 10.5z"/></svg>
+            <span class="d-block">Foto después</span>
+          </span>
+          <span class="cambiar">Toca para cambiar</span>
+          {{ form.foto_despues }}
+        </label>
+      </div>
+      <div class="error-campo" id="errorFotos" hidden></div>
+      {% for e in form.foto_antes.errors %}<div class="error-campo">Antes: {{ e }}</div>{% endfor %}
+      {% for e in form.foto_despues.errors %}<div class="error-campo">Después: {{ e }}</div>{% endfor %}
+
+      <button type="submit" class="btn btn-naranja btn-enviar w-100" id="btnEnviar">ENVIAR</button>
+    </form>
+  </div>
+</div>
+
+{% if guardada %}
+<div class="overlay-exito" role="dialog" aria-modal="true" aria-labelledby="tituloExito">
+  <div class="caja-exito">
+    <div class="check" aria-hidden="true">✔</div>
+    <h2 id="tituloExito">ACTIVIDAD GUARDADA</h2>
+    <p class="sub">La evidencia quedó registrada correctamente</p>
+    <div class="codigo-caja">
+      <small>Código generado</small>
+      <span class="codigo-generado" id="codigoGenerado">{{ guardada.codigo }}</span><br>
+      <button type="button" class="btn-copiar" id="btnCopiar">Copiar código</button>
+    </div>
+    <a href="{% url 'mis_actividades' %}" class="btn-volver-lista" id="btnVolverLista">Volver a mis actividades</a>
+  </div>
+</div>
+{% endif %}
+
+<script>
+(function () {
+  var MAX_MB = 5;
+
+  {% if guardada %}
+  // ----- Modal de confirmación -----
+  document.body.classList.add('modal-propio');
+  var volver = document.getElementById('btnVolverLista');
+  if (volver) volver.focus();
+  var copiar = document.getElementById('btnCopiar');
+  if (copiar) copiar.addEventListener('click', function () {
+    var codigo = document.getElementById('codigoGenerado').textContent.trim();
+    var ok = function () { copiar.textContent = '¡Copiado!'; };
+    if (navigator.clipboard) { navigator.clipboard.writeText(codigo).then(ok); }
+    else {
+      var r = document.createRange(); r.selectNodeContents(document.getElementById('codigoGenerado'));
+      var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+      try { document.execCommand('copy'); ok(); } catch (e) {}
+    }
+  });
+  {% endif %}
+
+  // ----- Vista previa de las fotos (dentro de la caja, tamaño fijo) -----
+  var errorFotos = document.getElementById('errorFotos');
+  function mostrarError(msg) { errorFotos.textContent = msg; errorFotos.hidden = !msg; }
+
+  document.querySelectorAll('.caja-foto input[type=file]').forEach(function (input) {
+    var caja = input.closest('.caja-foto');
+    input.addEventListener('change', function () {
+      var archivo = input.files[0];
+      caja.querySelector('img')?.remove();
+      caja.classList.remove('con-foto');
+      if (!archivo) return;
+      if (archivo.size > MAX_MB * 1024 * 1024) {
+        input.value = '';
+        caja.classList.add('is-invalid');
+        mostrarError('Cada imagen debe pesar menos de ' + MAX_MB + ' MB.');
+        return;
+      }
+      caja.classList.remove('is-invalid');
+      mostrarError('');
+      var img = document.createElement('img');
+      img.alt = 'Vista previa';
+      img.src = URL.createObjectURL(archivo);
+      img.onload = function () { URL.revokeObjectURL(img.src); };
+      caja.appendChild(img);
+      caja.classList.add('con-foto');
+    });
+  });
+
+  // ----- Validación visible + evitar doble envío -----
+  var form = document.getElementById('formActividad');
+  var btn = document.getElementById('btnEnviar');
+  form.addEventListener('submit', function (e) {
+    var faltan = false;
+    form.querySelectorAll('.caja-foto input[type=file]').forEach(function (i) {
+      var caja = i.closest('.caja-foto');
+      if (!i.files.length) { caja.classList.add('is-invalid'); faltan = true; }
+    });
+    if (faltan) {
+      e.preventDefault();
+      mostrarError('Sube las dos fotos: antes y después.');
+      errorFotos.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>ENVIANDO…';
+  });
+})();
+</script>
+{% endblock %}

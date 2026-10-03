@@ -1,0 +1,21 @@
+{% extends 'administrador/base_admin.html' %}
+{% block titulo %}{{ usuario_obj.username }} · Actividades{% endblock %}
+{% block panel_contenido %}
+<a href="{% url 'usuarios_admin' %}" class="btn btn-outline-secondary btn-sm mb-3">← Usuarios</a>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <div><h3 class="fw-bold m-0">{{ usuario_obj.get_full_name|default:usuario_obj.username }}</h3>
+    <small class="text-muted">{{ usuario_obj.email }} · {{ actividades|length }} actividad(es)</small></div>
+  <form method="get" class="d-flex gap-2">
+    <input type="search" name="q" value="{{ q }}" class="form-control" placeholder="Código o tarea">
+    <button class="btn btn-spa-primary">Buscar</button></form>
+</div>
+<div class="table-responsive"><table class="table table-hover bg-white align-middle">
+  <thead><tr><th>Código</th><th>Tarea</th><th>Fecha</th><th>Enviada</th><th></th></tr></thead>
+  <tbody>
+  {% for a in actividades %}
+    <tr><td><span class="badge bg-warning text-dark fs-6">{{ a.codigo }}</span></td><td>{{ a.tarea.titulo }}</td>
+      <td>{{ a.fecha|date:"d/m/Y" }}</td><td>{{ a.creado|date:"d/m/Y H:i" }}</td>
+      <td class="text-end"><a class="btn btn-sm btn-spa-primary" href="{% url 'actividad_admin_detalle' a.pk %}">Ver</a></td></tr>
+  {% empty %}<tr><td colspan="5" class="text-center text-muted py-3">Sin actividades{% if q %} para "{{ q }}"{% endif %}.</td></tr>{% endfor %}
+  </tbody></table></div>
+{% endblock %}

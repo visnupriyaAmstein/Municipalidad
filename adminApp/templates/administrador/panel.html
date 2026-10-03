@@ -1,0 +1,22 @@
+{% extends 'administrador/base_admin.html' %}
+{% block titulo %}Panel · Administración{% endblock %}
+{% block panel_contenido %}
+<h3 class="fw-bold mb-3">Resumen general</h3>
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3"><div class="card border-0 p-3 shadow-sm text-white" style="background:#8fa085"><span>Tareas</span><h2 class="fw-bold m-0">{{ total_tareas }}</h2></div></div>
+  <div class="col-6 col-lg-3"><div class="card border-0 p-3 shadow-sm text-white" style="background:#466352"><span>Tareas activas</span><h2 class="fw-bold m-0">{{ tareas_activas }}</h2></div></div>
+  <div class="col-6 col-lg-3"><div class="card border-0 p-3 shadow-sm" style="background:#c0b298"><span>Actividades reportadas</span><h2 class="fw-bold m-0">{{ total_actividades }}</h2></div></div>
+  <div class="col-6 col-lg-3"><div class="card border-0 p-3 shadow-sm" style="background:#F39C12"><span>Usuarios con reportes</span><h2 class="fw-bold m-0">{{ usuarios_con_actividad }}</h2></div></div>
+</div>
+<h5 class="fw-bold">Últimas actividades</h5>
+<div class="table-responsive"><table class="table table-hover bg-white align-middle">
+  <thead><tr><th>Código</th><th>Usuario</th><th>Tarea</th><th>Fecha</th><th></th></tr></thead>
+  <tbody>
+  {% for a in ultimas %}
+    <tr><td><span class="badge bg-warning text-dark">{{ a.codigo }}</span></td>
+      <td>{{ a.usuario.get_full_name|default:a.usuario.username }}</td><td>{{ a.tarea.titulo }}</td>
+      <td>{{ a.fecha|date:"d/m/Y" }}</td>
+      <td class="text-end"><a class="btn btn-sm btn-spa-primary" href="{% url 'actividad_admin_detalle' a.pk %}">Ver</a></td></tr>
+  {% empty %}<tr><td colspan="5" class="text-center text-muted py-3">Aún no hay actividades reportadas.</td></tr>{% endfor %}
+  </tbody></table></div>
+{% endblock %}

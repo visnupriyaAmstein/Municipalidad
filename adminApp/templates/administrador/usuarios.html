@@ -1,0 +1,19 @@
+{% extends 'administrador/base_admin.html' %}
+{% block titulo %}Actividades por usuario · Administración{% endblock %}
+{% block panel_contenido %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h3 class="fw-bold m-0">Actividades por usuario</h3>
+  <form method="get" class="d-flex gap-2">
+    <input type="search" name="q" value="{{ q }}" class="form-control" placeholder="Buscar usuario">
+    <button class="btn btn-spa-primary">Buscar</button></form>
+</div>
+<div class="table-responsive"><table class="table table-hover bg-white align-middle">
+  <thead><tr><th>Usuario</th><th>Nombre</th><th>Correo</th><th>Actividades</th><th></th></tr></thead>
+  <tbody>
+  {% for u in usuarios %}
+    <tr><td class="fw-semibold">{{ u.username }}</td><td>{{ u.get_full_name|default:"—" }}</td><td>{{ u.email|default:"—" }}</td>
+      <td><span class="badge bg-warning text-dark fs-6">{{ u.total }}</span></td>
+      <td class="text-end"><a class="btn btn-sm btn-spa-primary" href="{% url 'usuario_actividades' u.pk %}">Ver actividades</a></td></tr>
+  {% empty %}<tr><td colspan="5" class="text-center text-muted py-3">No hay usuarios.</td></tr>{% endfor %}
+  </tbody></table></div>
+{% endblock %}

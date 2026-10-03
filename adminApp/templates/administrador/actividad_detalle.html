@@ -1,0 +1,19 @@
+{% extends 'administrador/base_admin.html' %}
+{% block titulo %}{{ a.codigo }} · Administración{% endblock %}
+{% block panel_contenido %}
+<a href="{% url 'usuario_actividades' a.usuario.pk %}" class="btn btn-outline-secondary btn-sm mb-3">← Actividades de {{ a.usuario.username }}</a>
+<div class="card card-spa p-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+    <div><h4 class="fw-bold mb-1">{{ a.tarea.titulo }}</h4><span class="badge bg-secondary">{{ a.tarea.area }}</span></div>
+    <span class="codigo-generado m-0 fs-5">{{ a.codigo }}</span>
+  </div><hr>
+  <p class="mb-1"><strong>Usuario:</strong> {{ a.usuario.get_full_name|default:a.usuario.username }} ({{ a.usuario.email }})</p>
+  <p class="mb-1"><strong>Tarea a realizar:</strong> {{ a.tarea.descripcion|default:"—" }}</p>
+  <p class="mb-1"><strong>Fecha:</strong> {{ a.fecha|date:"d/m/Y" }} · <strong>Enviada:</strong> {{ a.creado|date:"d/m/Y H:i" }}</p>
+  <p class="mb-3"><strong>Lo que hizo:</strong><br>{{ a.descripcion|linebreaksbr }}</p>
+  <div class="row g-3">
+    <div class="col-md-6"><div class="fw-semibold mb-1">Antes</div><img class="foto-evidencia" src="{{ a.foto_antes.url }}" alt="Antes"></div>
+    <div class="col-md-6"><div class="fw-semibold mb-1">Después</div><img class="foto-evidencia" src="{{ a.foto_despues.url }}" alt="Después"></div>
+  </div>
+</div>
+{% endblock %}

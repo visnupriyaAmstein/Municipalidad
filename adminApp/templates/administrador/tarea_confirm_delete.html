@@ -1,0 +1,12 @@
+{% extends 'administrador/base_admin.html' %}
+{% block titulo %}Eliminar tarea · Administración{% endblock %}
+{% block panel_contenido %}
+<div class="card card-spa p-4" style="max-width:560px">
+  <h4 class="fw-bold">¿Eliminar la tarea?</h4>
+  <p><strong>{{ tarea.titulo }}</strong></p>
+  <p class="small text-muted">Si ya tiene actividades registradas no se podrá eliminar; en ese caso desactívala desde "Editar".</p>
+  <form method="post" class="d-flex gap-2">{% csrf_token %}
+    <button class="btn btn-danger">Sí, eliminar</button>
+    <a href="{% url 'lista_tareas' %}" class="btn btn-outline-secondary">Cancelar</a></form>
+</div>
+{% endblock %}
