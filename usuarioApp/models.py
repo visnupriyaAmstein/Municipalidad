@@ -20,7 +20,13 @@ def generar_codigo():
 
 
 class Actividad(models.Model):
-    """Reporte de avance que un usuario envía sobre una tarea del administrador."""
+    """Reporte de avance que un usuario envía sobre una tarea; el administrador lo evalúa."""
+
+    class Estado(models.TextChoices):
+        PENDIENTE = 'PENDIENTE', 'En revisión'
+        APROBADA = 'APROBADA', 'Aprobada'
+        RECHAZADA = 'RECHAZADA', 'Rechazada'
+
     codigo = models.CharField(max_length=12, unique=True, editable=False)
     usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='actividades')
     tarea = models.ForeignKey(Tarea, on_delete=models.PROTECT, related_name='actividades')
@@ -29,6 +35,13 @@ class Actividad(models.Model):
     foto_antes = models.ImageField(upload_to='actividades/antes/')
     foto_despues = models.ImageField(upload_to='actividades/despues/')
     creado = models.DateTimeField(default=timezone.now, editable=False)
+
+    # Evaluación del administrador
+    estado = models.CharField(max_length=10, choices=Estado.choices, default=Estado.PENDIENTE, db_index=True)
+    observacion = models.TextField(blank=True, verbose_name='Observación de la evaluación')
+    evaluado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
+                                     related_name='actividades_evaluadas')
+    evaluado_en = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         db_table = 'actividades'

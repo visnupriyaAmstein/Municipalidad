@@ -4,20 +4,30 @@ from django.contrib.auth.models import User
 from django.db.models import Count, Q
 from django.db.models.deletion import ProtectedError
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
+from django.views.decorators.http import require_POST
 
 from usuarioApp.models import Actividad
-from .forms import TareaForm
+from .avance import ETIQUETAS, avance_de_usuario, avance_de_usuarios
+from .forms import EvaluacionForm, TareaForm, funcionarios
 from .models import Tarea
+
+Estado = Actividad.Estado
 
 
 @login_required
 def panel(request):
+    lista_funcionarios = list(funcionarios())
+    avances = avance_de_usuarios(lista_funcionarios).values()
+    con_tareas = [a for a in avances if a.asignadas]
+    promedio = round(sum(a.porcentaje for a in con_tareas) / len(con_tareas)) if con_tareas else 0
     contexto = {
-        'total_tareas': Tarea.objects.count(),
+        'por_evaluar': Actividad.objects.filter(estado=Estado.PENDIENTE).count(),
         'tareas_activas': Tarea.objects.filter(activa=True).count(),
         'total_actividades': Actividad.objects.count(),
-        'usuarios_con_actividad': User.objects.filter(actividades__isnull=False).distinct().count(),
-        'ultimas': Actividad.objects.select_related('usuario', 'tarea')[:8],
+        'avance_promedio': promedio,
+        'pendientes': Actividad.objects.filter(estado=Estado.PENDIENTE)
+                                       .select_related('usuario', 'tarea').order_by('creado')[:6],
         'seccion_activa': 'panel',
     }
     return render(request, 'administrador/panel.html', contexto)
@@ -28,7 +38,11 @@ def panel(request):
 def lista_tareas(request):
     q = request.GET.get('q', '').strip()
     estado = request.GET.get('estado', '')
-    tareas = Tarea.objects.annotate(total=Count('actividades'))
+    tareas = Tarea.objects.annotate(
+        total=Count('actividades', distinct=True),
+        n_asignados=Count('asignados', distinct=True),
+        n_completadas=Count('actividades__usuario', filter=Q(actividades__estado=Estado.APROBADA), distinct=True),
+    )
     if q:
         tareas = tareas.filter(Q(titulo__icontains=q) | Q(area__icontains=q) | Q(ubicacion__icontains=q))
     if estado == 'activa':
@@ -46,7 +60,9 @@ def crear_tarea(request):
         tarea = form.save(commit=False)
         tarea.creada_por = request.user
         tarea.save()
-        messages.success(request, f'Tarea "{tarea.titulo}" creada.')
+        form.save_m2m()  # guarda los funcionarios asignados
+        messages.success(request, f'Tarea "{tarea.titulo}" creada y asignada a '
+                                  f'{tarea.asignados.count()} funcionario(s).')
         return redirect('lista_tareas')
     return render(request, 'administrador/tarea_form.html', {
         'form': form, 'titulo_form': 'Nueva tarea', 'seccion_activa': 'tareas'})
@@ -79,16 +95,23 @@ def eliminar_tarea(request, pk):
         'tarea': tarea, 'seccion_activa': 'tareas'})
 
 
-# ---------------- Actividades por usuario ----------------
+# ---------------- Funcionarios y su avance ----------------
 @login_required
 def usuarios_admin(request):
     q = request.GET.get('q', '').strip()
     usuarios = (User.objects.filter(is_superuser=False)
                 .exclude(groups__name='Administrador')
-                .annotate(total=Count('actividades')).order_by('-total', 'username'))
+                .annotate(total=Count('actividades', distinct=True),
+                          pendientes=Count('actividades', filter=Q(actividades__estado=Estado.PENDIENTE),
+                                           distinct=True))
+                .order_by('first_name', 'username'))
     if q:
         usuarios = usuarios.filter(Q(username__icontains=q) | Q(first_name__icontains=q)
                                    | Q(last_name__icontains=q) | Q(email__icontains=q))
+    usuarios = list(usuarios)
+    avances = avance_de_usuarios(usuarios)
+    for u in usuarios:
+        u.avance = avances[u.pk]
     return render(request, 'administrador/usuarios.html', {
         'usuarios': usuarios, 'q': q, 'seccion_activa': 'usuarios'})
 
@@ -100,12 +123,61 @@ def usuario_actividades(request, user_id):
     actividades = usuario.actividades.select_related('tarea')
     if q:
         actividades = actividades.filter(Q(codigo__icontains=q) | Q(tarea__titulo__icontains=q))
+
+    avance = avance_de_usuario(usuario)
+    tareas_asignadas = list(usuario.tareas_asignadas.filter(activa=True).order_by('titulo'))
+    for t in tareas_asignadas:
+        t.estado_avance = avance.estado_por_tarea.get(t.pk, 'SIN_REPORTE')
+        t.estado_texto = ETIQUETAS[t.estado_avance]
     return render(request, 'administrador/usuario_actividades.html', {
-        'usuario_obj': usuario, 'actividades': actividades, 'q': q, 'seccion_activa': 'usuarios'})
+        'usuario_obj': usuario, 'actividades': actividades, 'q': q, 'avance': avance,
+        'tareas_asignadas': tareas_asignadas, 'seccion_activa': 'usuarios'})
+
+
+# ---------------- Evaluación de actividades ----------------
+@login_required
+def por_evaluar(request):
+    """Bandeja de reportes esperando evaluación, del más antiguo al más nuevo."""
+    pendientes = (Actividad.objects.filter(estado=Estado.PENDIENTE)
+                  .select_related('usuario', 'tarea').order_by('creado'))
+    return render(request, 'administrador/por_evaluar.html', {
+        'pendientes': pendientes, 'seccion_activa': 'evaluar'})
 
 
 @login_required
 def actividad_admin_detalle(request, pk):
-    actividad = get_object_or_404(Actividad.objects.select_related('usuario', 'tarea'), pk=pk)
+    actividad = get_object_or_404(Actividad.objects.select_related('usuario', 'tarea', 'evaluado_por'), pk=pk)
+    form = EvaluacionForm(initial={'estado': Estado.APROBADA, 'observacion': actividad.observacion})
+    siguiente = (Actividad.objects.filter(estado=Estado.PENDIENTE).exclude(pk=actividad.pk)
+                 .order_by('creado').first())
     return render(request, 'administrador/actividad_detalle.html', {
-        'a': actividad, 'seccion_activa': 'usuarios'})
+        'a': actividad, 'form': form, 'siguiente': siguiente, 'seccion_activa': 'evaluar'})
+
+
+@login_required
+@require_POST
+def evaluar_actividad(request, pk):
+    actividad = get_object_or_404(Actividad.objects.select_related('usuario', 'tarea'), pk=pk)
+    form = EvaluacionForm(request.POST)
+    if not form.is_valid():
+        siguiente = (Actividad.objects.filter(estado=Estado.PENDIENTE).exclude(pk=actividad.pk)
+                     .order_by('creado').first())
+        return render(request, 'administrador/actividad_detalle.html', {
+            'a': actividad, 'form': form, 'siguiente': siguiente, 'seccion_activa': 'evaluar'}, status=400)
+
+    actividad.estado = form.cleaned_data['estado']
+    actividad.observacion = form.cleaned_data['observacion']
+    actividad.evaluado_por = request.user
+    actividad.evaluado_en = timezone.now()
+    actividad.save(update_fields=['estado', 'observacion', 'evaluado_por', 'evaluado_en'])
+
+    verbo = 'aprobada' if actividad.estado == Estado.APROBADA else 'rechazada'
+    messages.success(request, f'Actividad {actividad.codigo} {verbo}.')
+
+    # Flujo continuo: si quedan reportes por evaluar, pasa directo al siguiente
+    if request.POST.get('continuar') == '1':
+        siguiente = Actividad.objects.filter(estado=Estado.PENDIENTE).order_by('creado').first()
+        if siguiente:
+            return redirect('actividad_admin_detalle', pk=siguiente.pk)
+        return redirect('por_evaluar')
+    return redirect('actividad_admin_detalle', pk=actividad.pk)

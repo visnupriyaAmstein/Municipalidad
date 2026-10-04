@@ -31,7 +31,10 @@ class Command(BaseCommand):
                 u.save()
             u.groups.add(grupo)
         admin = User.objects.get(username='admin')
+        funcionarios = User.objects.filter(username__in=['funcionario', 'nataly'])
         for titulo, area, ubic, desc in TAREAS:
-            Tarea.objects.get_or_create(titulo=titulo, defaults={
+            tarea, _ = Tarea.objects.get_or_create(titulo=titulo, defaults={
                 'area': area, 'ubicacion': ubic, 'descripcion': desc, 'creada_por': admin})
+            if not tarea.asignados.exists():
+                tarea.asignados.add(*funcionarios)
         self.stdout.write(self.style.SUCCESS(f'Listo. Usuarios: admin, funcionario, nataly · clave: {CLAVE}'))

@@ -1,5 +1,5 @@
 // =========================================================
-// Spa Relax - JS general
+// Actividad Asignada - JS general
 // Va en static/js/custom.js
 // Se carga DESPUES de bootstrap.bundle.min.js en base.html
 // =========================================================
@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", function () {
   //    Util porque el sitio no usa un framework de frontend,
   //    solo Django + Bootstrap.
   const rutaActual = window.location.pathname;
-  document.querySelectorAll(".navbar-spa .nav-link").forEach(function (link) {
+  document.querySelectorAll(".topbar a.nav-link").forEach(function (link) {
     const rutaLink = link.getAttribute("href");
     if (rutaLink && rutaActual.startsWith(rutaLink) && rutaLink !== "/") {
       link.classList.add("active");

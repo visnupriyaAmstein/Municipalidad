@@ -1,12 +1,19 @@
 {% extends 'usuario/base_cliente.html' %}
 {% block titulo %}Mis actividades · Actividad Asignada{% endblock %}
 {% block panel_contenido %}
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-  <h1 class="page-title">Mis actividades</h1>
-  <form method="get" class="buscador">
-    <input type="search" name="q" value="{{ q }}" class="form-control" placeholder="Código o nombre de la tarea">
-    <button class="btn btn-spa-primary">Buscar</button>
-    {% if q %}<a href="{% url 'mis_actividades' %}" class="btn btn-outline-secondary">Limpiar</a>{% endif %}
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Mis actividades</h1>
+    <p class="page-sub">Tus reportes, su código de registro y el resultado de la evaluación.</p>
+  </div>
+  <form method="get" class="buscador" role="search">
+    <input type="search" name="q" value="{{ q }}" class="form-control" placeholder="Código o nombre de la tarea" aria-label="Buscar actividades">
+    <select name="estado" class="form-select w-auto" aria-label="Estado" onchange="this.form.submit()">
+      <option value="">Todos</option>
+      {% for valor, nombre in estados %}<option value="{{ valor }}" {% if estado == valor %}selected{% endif %}>{{ nombre }}</option>{% endfor %}
+    </select>
+    <button class="btn btn-muni px-3">Buscar</button>
+    {% if q or estado %}<a href="{% url 'mis_actividades' %}" class="btn btn-muni-outline">Limpiar</a>{% endif %}
   </form>
 </div>
 
@@ -16,38 +23,41 @@
   <a href="{% url 'actividad_detalle' a.codigo %}" class="act-card">
     <img class="act-thumb" src="{{ a.foto_despues.url }}" alt="" loading="lazy">
     <div class="min-w-0">
-      <span class="badge bg-warning text-dark">{{ a.codigo }}</span>
-      <div class="titulo mt-1">{{ a.tarea.titulo }}</div>
+      <span class="chip-codigo">{{ a.codigo }}</span> <span class="chip-eval {{ a.estado }}">{{ a.get_estado_display }}</span>
+      <div class="titulo">{{ a.tarea.titulo }}</div>
       <div class="meta">{{ a.tarea.area }} · {{ a.fecha|date:"d/m/Y" }}</div>
     </div>
   </a>
   {% empty %}
-  <div class="text-center text-muted py-4">
-    {% if q %}No encontramos actividades para "{{ q }}".{% else %}Aún no has reportado actividades. <a href="{% url 'tareas' %}">Ver tareas</a>{% endif %}
+  <div class="card-muni vacio">
+    {% if q or estado %}No encontramos actividades con esos filtros.{% else %}Aún no has reportado actividades.<br><a href="{% url 'tareas' %}">Ver tareas disponibles</a>{% endif %}
   </div>
   {% endfor %}
 </div>
 
 {# ---- Tablet / escritorio: tabla ---- #}
-<div class="table-responsive d-none d-md-block">
-<table class="table table-hover align-middle bg-white rounded-3 overflow-hidden">
-  <thead><tr><th></th><th>Código</th><th>Tarea</th><th>Fecha</th><th>Enviada</th><th></th></tr></thead>
+<div class="tabla-muni d-none d-md-block">
+<div class="table-responsive">
+<table class="table table-hover align-middle">
+  <thead><tr><th style="width:76px">Foto</th><th>Código</th><th>Tarea</th><th>Estado</th><th>Fecha</th><th>Enviada</th><th></th></tr></thead>
   <tbody>
   {% for a in actividades %}
     <tr>
-      <td style="width:72px"><img class="act-thumb" src="{{ a.foto_despues.url }}" alt="" loading="lazy"></td>
-      <td><span class="badge bg-warning text-dark fs-6">{{ a.codigo }}</span></td>
-      <td>{{ a.tarea.titulo }}<br><small class="text-muted">{{ a.tarea.area }}</small></td>
+      <td><img class="act-thumb" src="{{ a.foto_despues.url }}" alt="" loading="lazy"></td>
+      <td><span class="chip-codigo">{{ a.codigo }}</span></td>
+      <td><span class="fw-semibold">{{ a.tarea.titulo }}</span><br><small class="text-muted">{{ a.tarea.area }}</small></td>
+      <td><span class="chip-eval {{ a.estado }}">{{ a.get_estado_display }}</span></td>
       <td>{{ a.fecha|date:"d/m/Y" }}</td>
-      <td>{{ a.creado|date:"d/m/Y H:i" }}</td>
-      <td class="text-end"><a href="{% url 'actividad_detalle' a.codigo %}" class="btn btn-sm btn-spa-primary">Ver</a></td>
+      <td class="text-muted">{{ a.creado|date:"d/m/Y H:i" }}</td>
+      <td class="text-end"><a href="{% url 'actividad_detalle' a.codigo %}" class="btn btn-sm btn-muni-outline">Ver detalle</a></td>
     </tr>
   {% empty %}
-    <tr><td colspan="6" class="text-center text-muted py-4">
-      {% if q %}No encontramos actividades para "{{ q }}".{% else %}Aún no has reportado actividades. <a href="{% url 'tareas' %}">Ver tareas</a>{% endif %}
+    <tr><td colspan="7" class="vacio">
+      {% if q or estado %}No encontramos actividades con esos filtros.{% else %}Aún no has reportado actividades. <a href="{% url 'tareas' %}">Ver tareas disponibles</a>{% endif %}
     </td></tr>
   {% endfor %}
   </tbody>
 </table>
+</div>
 </div>
 {% endblock %}

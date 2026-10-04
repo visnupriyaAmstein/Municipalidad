@@ -4,7 +4,7 @@ from django.utils import timezone
 
 
 class Tarea(models.Model):
-    """Tarea municipal creada por el administrador. El usuario la selecciona y reporta su avance."""
+    """Tarea municipal creada por el administrador y asignada a uno o más funcionarios."""
     titulo = models.CharField(max_length=120)
     descripcion = models.TextField(blank=True, help_text="Qué se debe realizar.")
     area = models.CharField(max_length=80, help_text="Ej: Obras, Áreas Verdes, Alumbrado.")
@@ -12,6 +12,9 @@ class Tarea(models.Model):
     activa = models.BooleanField(default=True)
     creada_por = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True, related_name='tareas_creadas'
+    )
+    asignados = models.ManyToManyField(
+        User, blank=True, related_name='tareas_asignadas', verbose_name='Funcionarios asignados'
     )
     creado = models.DateTimeField(default=timezone.now)
 

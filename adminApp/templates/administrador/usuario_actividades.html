@@ -1,21 +1,43 @@
 {% extends 'administrador/base_admin.html' %}
-{% block titulo %}{{ usuario_obj.username }} · Actividades{% endblock %}
+{% block titulo %}{{ usuario_obj.username }} · Avance{% endblock %}
 {% block panel_contenido %}
-<a href="{% url 'usuarios_admin' %}" class="btn btn-outline-secondary btn-sm mb-3">← Usuarios</a>
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-  <div><h3 class="fw-bold m-0">{{ usuario_obj.get_full_name|default:usuario_obj.username }}</h3>
-    <small class="text-muted">{{ usuario_obj.email }} · {{ actividades|length }} actividad(es)</small></div>
-  <form method="get" class="d-flex gap-2">
-    <input type="search" name="q" value="{{ q }}" class="form-control" placeholder="Código o tarea">
-    <button class="btn btn-spa-primary">Buscar</button></form>
+<a href="{% url 'usuarios_admin' %}" class="btn-volver-link">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+  Avance por funcionario
+</a>
+<div class="page-head">
+  <div>
+    <h1 class="page-title">{{ usuario_obj.get_full_name|default:usuario_obj.username }}</h1>
+    <p class="page-sub">{{ usuario_obj.email|default:usuario_obj.username }}</p>
+  </div>
 </div>
-<div class="table-responsive"><table class="table table-hover bg-white align-middle">
-  <thead><tr><th>Código</th><th>Tarea</th><th>Fecha</th><th>Enviada</th><th></th></tr></thead>
+
+{% include '_avance_card.html' %}
+
+<h2 class="seccion-titulo mt-0">Tareas asignadas</h2>
+<div class="tabla-muni mb-4"><div class="table-responsive"><table class="table align-middle">
+  <thead><tr><th>Tarea</th><th>Área</th><th>Estado</th></tr></thead>
+  <tbody>
+  {% for t in tareas_asignadas %}
+    <tr><td class="fw-semibold">{{ t.titulo }}</td><td><span class="chip-area">{{ t.area }}</span></td>
+      <td>{% if t.estado_avance == 'SIN_REPORTE' %}<span class="chip-eval">{{ t.estado_texto }}</span>{% else %}<span class="chip-eval {{ t.estado_avance }}">{{ t.estado_texto }}</span>{% endif %}</td></tr>
+  {% empty %}<tr><td colspan="3" class="vacio">No tiene tareas activas asignadas.</td></tr>{% endfor %}
+  </tbody></table></div></div>
+
+<div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+  <h2 class="seccion-titulo m-0">Reportes enviados</h2>
+  <form method="get" class="buscador" role="search">
+    <input type="search" name="q" value="{{ q }}" class="form-control" placeholder="Código o tarea" aria-label="Buscar reporte">
+    <button class="btn btn-muni px-3">Buscar</button></form>
+</div>
+<div class="tabla-muni"><div class="table-responsive"><table class="table table-hover align-middle">
+  <thead><tr><th>Código</th><th>Tarea</th><th>Estado</th><th>Fecha</th><th>Enviado</th><th></th></tr></thead>
   <tbody>
   {% for a in actividades %}
-    <tr><td><span class="badge bg-warning text-dark fs-6">{{ a.codigo }}</span></td><td>{{ a.tarea.titulo }}</td>
-      <td>{{ a.fecha|date:"d/m/Y" }}</td><td>{{ a.creado|date:"d/m/Y H:i" }}</td>
-      <td class="text-end"><a class="btn btn-sm btn-spa-primary" href="{% url 'actividad_admin_detalle' a.pk %}">Ver</a></td></tr>
-  {% empty %}<tr><td colspan="5" class="text-center text-muted py-3">Sin actividades{% if q %} para "{{ q }}"{% endif %}.</td></tr>{% endfor %}
-  </tbody></table></div>
+    <tr><td><span class="chip-codigo">{{ a.codigo }}</span></td><td class="fw-semibold">{{ a.tarea.titulo }}</td>
+      <td><span class="chip-eval {{ a.estado }}">{{ a.get_estado_display }}</span></td>
+      <td>{{ a.fecha|date:"d/m/Y" }}</td><td class="text-muted">{{ a.creado|date:"d/m/Y H:i" }}</td>
+      <td class="text-end"><a class="btn btn-sm {% if a.estado == 'PENDIENTE' %}btn-muni{% else %}btn-muni-outline{% endif %}" href="{% url 'actividad_admin_detalle' a.pk %}">{% if a.estado == 'PENDIENTE' %}Evaluar{% else %}Ver detalle{% endif %}</a></td></tr>
+  {% empty %}<tr><td colspan="6" class="vacio">Sin reportes{% if q %} para "{{ q }}"{% endif %}.</td></tr>{% endfor %}
+  </tbody></table></div></div>
 {% endblock %}

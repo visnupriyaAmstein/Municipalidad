@@ -1,22 +1,34 @@
 {% extends 'administrador/base_admin.html' %}
-{% block titulo %}Panel · Administración{% endblock %}
+{% block titulo %}Resumen · Administración{% endblock %}
 {% block panel_contenido %}
-<h3 class="fw-bold mb-3">Resumen general</h3>
-<div class="row g-3 mb-4">
-  <div class="col-6 col-lg-3"><div class="card border-0 p-3 shadow-sm text-white" style="background:#8fa085"><span>Tareas</span><h2 class="fw-bold m-0">{{ total_tareas }}</h2></div></div>
-  <div class="col-6 col-lg-3"><div class="card border-0 p-3 shadow-sm text-white" style="background:#466352"><span>Tareas activas</span><h2 class="fw-bold m-0">{{ tareas_activas }}</h2></div></div>
-  <div class="col-6 col-lg-3"><div class="card border-0 p-3 shadow-sm" style="background:#c0b298"><span>Actividades reportadas</span><h2 class="fw-bold m-0">{{ total_actividades }}</h2></div></div>
-  <div class="col-6 col-lg-3"><div class="card border-0 p-3 shadow-sm" style="background:#F39C12"><span>Usuarios con reportes</span><h2 class="fw-bold m-0">{{ usuarios_con_actividad }}</h2></div></div>
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Resumen general</h1>
+    <p class="page-sub">Reportes por evaluar y avance de los funcionarios.</p>
+  </div>
+  <a href="{% url 'crear_tarea' %}" class="btn btn-muni px-3">Nueva tarea</a>
 </div>
-<h5 class="fw-bold">Últimas actividades</h5>
-<div class="table-responsive"><table class="table table-hover bg-white align-middle">
-  <thead><tr><th>Código</th><th>Usuario</th><th>Tarea</th><th>Fecha</th><th></th></tr></thead>
+
+<div class="row g-3">
+  <div class="col-6 col-xl-3"><a href="{% url 'por_evaluar' %}" class="text-decoration-none"><div class="stat destacada"><div class="valor">{{ por_evaluar }}</div><div class="nombre">Reportes por evaluar</div></div></a></div>
+  <div class="col-6 col-xl-3"><a href="{% url 'usuarios_admin' %}" class="text-decoration-none"><div class="stat"><div class="valor">{{ avance_promedio }}%</div><div class="nombre">Avance promedio</div></div></a></div>
+  <div class="col-6 col-xl-3"><div class="stat"><div class="valor">{{ tareas_activas }}</div><div class="nombre">Tareas activas</div></div></div>
+  <div class="col-6 col-xl-3"><div class="stat"><div class="valor">{{ total_actividades }}</div><div class="nombre">Reportes recibidos</div></div></div>
+</div>
+
+<div class="d-flex justify-content-between align-items-end">
+  <h2 class="seccion-titulo">Esperando evaluación</h2>
+  {% if por_evaluar > pendientes|length %}<a href="{% url 'por_evaluar' %}" class="small fw-semibold mb-3">Ver los {{ por_evaluar }}</a>{% endif %}
+</div>
+<div class="tabla-muni"><div class="table-responsive"><table class="table table-hover align-middle">
+  <thead><tr><th>Código</th><th>Funcionario</th><th>Tarea</th><th>Enviado</th><th></th></tr></thead>
   <tbody>
-  {% for a in ultimas %}
-    <tr><td><span class="badge bg-warning text-dark">{{ a.codigo }}</span></td>
-      <td>{{ a.usuario.get_full_name|default:a.usuario.username }}</td><td>{{ a.tarea.titulo }}</td>
-      <td>{{ a.fecha|date:"d/m/Y" }}</td>
-      <td class="text-end"><a class="btn btn-sm btn-spa-primary" href="{% url 'actividad_admin_detalle' a.pk %}">Ver</a></td></tr>
-  {% empty %}<tr><td colspan="5" class="text-center text-muted py-3">Aún no hay actividades reportadas.</td></tr>{% endfor %}
-  </tbody></table></div>
+  {% for a in pendientes %}
+    <tr><td><span class="chip-codigo">{{ a.codigo }}</span></td>
+      <td class="fw-semibold">{{ a.usuario.get_full_name|default:a.usuario.username }}</td>
+      <td>{{ a.tarea.titulo }}</td>
+      <td class="text-muted">{{ a.creado|date:"d/m/Y H:i" }}</td>
+      <td class="text-end"><a class="btn btn-sm btn-muni" href="{% url 'actividad_admin_detalle' a.pk %}">Evaluar</a></td></tr>
+  {% empty %}<tr><td colspan="5" class="vacio">No hay reportes pendientes. Todo está evaluado.</td></tr>{% endfor %}
+  </tbody></table></div></div>
 {% endblock %}

@@ -1,55 +1,57 @@
 {% extends 'usuario/base_cliente.html' %}
+{% load static %}
 {% block titulo %}Reportar actividad · Actividad Asignada{% endblock %}
 {% block panel_contenido %}
 <div class="form-wrap">
-  <div class="telefono {% if guardada %}atenuado{% endif %}" {% if guardada %}inert aria-hidden="true"{% endif %}>
+  <div class="reporte {% if guardada %}atenuado{% endif %}" {% if guardada %}inert aria-hidden="true"{% endif %}>
 
-    <div class="telefono-top">
-      <a href="{% url 'tareas' %}" class="btn-volver" aria-label="Volver a las tareas">↩</a>
-      <h1><span class="ini">A</span>CTIVIDAD<span class="l2"><span class="ini">A</span>SIGNADA</span></h1>
+    <div class="reporte-cabecera">
+      <a href="{% url 'tareas' %}" class="btn-volver" aria-label="Volver a las tareas">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+      </a>
+      <div>
+        <p class="contexto">Reportar avance · {{ tarea.area }}</p>
+        <h1>{{ tarea.titulo }}</h1>
+        {% if tarea.descripcion %}<p class="desc">{{ tarea.descripcion }}</p>{% endif %}
+      </div>
+      <img class="escudo-marca" src="{% static 'images/escudo-la-serena-blanco.png' %}" alt="">
     </div>
 
-    <div class="pastilla">
-      <b>{{ tarea.titulo }}</b>
-      Asignada por administración · {{ tarea.creado|date:"d M Y" }}
-      {% if tarea.descripcion %}<div class="pastilla-desc">{{ tarea.descripcion }}</div>{% endif %}
-    </div>
-
-    <form method="post" enctype="multipart/form-data" action="{% url 'actividad_nueva' tarea.id %}" id="formActividad" novalidate>
+    <form class="reporte-cuerpo" method="post" enctype="multipart/form-data" action="{% url 'actividad_nueva' tarea.id %}" id="formActividad" novalidate>
       {% csrf_token %}
 
-      <div class="etiqueta-naranja">Descripción del avance</div>
-      {{ form.descripcion }}
-      {% for e in form.descripcion.errors %}<div class="error-campo">{{ e }}</div>{% endfor %}
-
-      <div class="etiqueta-naranja">Fecha</div>
-      {{ form.fecha }}
-      {% for e in form.fecha.errors %}<div class="error-campo">{{ e }}</div>{% endfor %}
-
-      <div class="etiqueta-naranja">Evidencia fotográfica</div>
-      <div class="cajas-foto">
-        <label class="caja-foto" for="{{ form.foto_antes.id_for_label }}">
-          <span class="ph">
-            <svg class="icono" viewBox="0 0 24 24" fill="currentColor"><path d="M9 3 7.2 5H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.2L15 3H9zm3 5.5A4.5 4.5 0 1 1 7.5 13 4.5 4.5 0 0 1 12 8.5zm0 2A2.5 2.5 0 1 0 14.5 13 2.5 2.5 0 0 0 12 10.5z"/></svg>
-            <span class="d-block">Foto antes</span>
-          </span>
-          <span class="cambiar">Toca para cambiar</span>
-          {{ form.foto_antes }}
-        </label>
-        <label class="caja-foto" for="{{ form.foto_despues.id_for_label }}">
-          <span class="ph">
-            <svg class="icono" viewBox="0 0 24 24" fill="currentColor"><path d="M9 3 7.2 5H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.2L15 3H9zm3 5.5A4.5 4.5 0 1 1 7.5 13 4.5 4.5 0 0 1 12 8.5zm0 2A2.5 2.5 0 1 0 14.5 13 2.5 2.5 0 0 0 12 10.5z"/></svg>
-            <span class="d-block">Foto después</span>
-          </span>
-          <span class="cambiar">Toca para cambiar</span>
-          {{ form.foto_despues }}
-        </label>
+      <div class="campo-grupo">
+        <label class="campo-etiqueta" for="{{ form.descripcion.id_for_label }}">¿Qué realizaste?</label>
+        {{ form.descripcion }}
+        {% for e in form.descripcion.errors %}<div class="error-campo">{{ e }}</div>{% endfor %}
       </div>
-      <div class="error-campo" id="errorFotos" hidden></div>
-      {% for e in form.foto_antes.errors %}<div class="error-campo">Antes: {{ e }}</div>{% endfor %}
-      {% for e in form.foto_despues.errors %}<div class="error-campo">Después: {{ e }}</div>{% endfor %}
 
-      <button type="submit" class="btn btn-naranja btn-enviar w-100" id="btnEnviar">ENVIAR</button>
+      <div class="campo-grupo">
+        <label class="campo-etiqueta" for="{{ form.fecha.id_for_label }}">Fecha del trabajo</label>
+        {{ form.fecha }}
+        {% for e in form.fecha.errors %}<div class="error-campo">{{ e }}</div>{% endfor %}
+      </div>
+
+      <div class="campo-grupo">
+        <span class="campo-etiqueta">Evidencia fotográfica <span class="campo-ayuda">· máx. 5 MB cada una</span></span>
+        <div class="cajas-foto">
+          <label class="caja-foto" for="{{ form.foto_antes.id_for_label }}">
+            <span class="ph"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span class="d-block">Foto antes</span></span>
+            <span class="cambiar">Toca para cambiar</span>
+            {{ form.foto_antes }}
+          </label>
+          <label class="caja-foto" for="{{ form.foto_despues.id_for_label }}">
+            <span class="ph"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span class="d-block">Foto después</span></span>
+            <span class="cambiar">Toca para cambiar</span>
+            {{ form.foto_despues }}
+          </label>
+        </div>
+        <div class="error-campo" id="errorFotos" hidden></div>
+        {% for e in form.foto_antes.errors %}<div class="error-campo">Antes: {{ e }}</div>{% endfor %}
+        {% for e in form.foto_despues.errors %}<div class="error-campo">Después: {{ e }}</div>{% endfor %}
+      </div>
+
+      <button type="submit" class="btn btn-muni btn-enviar w-100" id="btnEnviar">Enviar reporte</button>
     </form>
   </div>
 </div>
@@ -57,15 +59,17 @@
 {% if guardada %}
 <div class="overlay-exito" role="dialog" aria-modal="true" aria-labelledby="tituloExito">
   <div class="caja-exito">
-    <div class="check" aria-hidden="true">✔</div>
-    <h2 id="tituloExito">ACTIVIDAD GUARDADA</h2>
-    <p class="sub">La evidencia quedó registrada correctamente</p>
+    <div class="check" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+    </div>
+    <h2 id="tituloExito">Reporte enviado</h2>
+    <p class="sub">La evidencia quedó registrada y será revisada por la administración.</p>
     <div class="codigo-caja">
-      <small>Código generado</small>
+      <small>Código de registro</small>
       <span class="codigo-generado" id="codigoGenerado">{{ guardada.codigo }}</span><br>
       <button type="button" class="btn-copiar" id="btnCopiar">Copiar código</button>
     </div>
-    <a href="{% url 'mis_actividades' %}" class="btn-volver-lista" id="btnVolverLista">Volver a mis actividades</a>
+    <a href="{% url 'mis_actividades' %}" class="btn btn-muni w-100 py-2" id="btnVolverLista">Ir a mis actividades</a>
   </div>
 </div>
 {% endif %}
@@ -136,7 +140,7 @@
       return;
     }
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>ENVIANDO…';
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Enviando…';
   });
 })();
 </script>

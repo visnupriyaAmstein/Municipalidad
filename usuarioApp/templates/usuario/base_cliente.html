@@ -6,28 +6,18 @@
 
   {# ---------- Menú lateral (tablet y escritorio) ---------- #}
   <aside class="app-side d-none d-md-flex" aria-label="Menú del usuario">
-    <div class="app-user">
-      <div class="app-avatar">{{ user.first_name|default:user.username|first|upper }}</div>
-      <div class="app-user-nombre">{{ user.first_name|default:user.username }}</div>
-      <div class="app-user-rol">Panel del usuario</div>
-    </div>
+    <div class="app-side-titulo">Mi trabajo</div>
     <a href="{% url 'tareas' %}" class="app-link {% if n == 'tareas' or n == 'actividad_nueva' or n == 'actividad_guardada' %}activo{% endif %}">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-      Tareas municipales
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      Mis tareas
     </a>
     <a href="{% url 'mis_actividades' %}" class="app-link {% if n == 'mis_actividades' or n == 'actividad_detalle' %}activo{% endif %}">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h8"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h8"/></svg>
       Mis actividades
     </a>
   </aside>
 
   <section class="app-main">
-    {# Saludo compacto solo en celular #}
-    <div class="app-greeting d-md-none">
-      <div class="app-avatar">{{ user.first_name|default:user.username|first|upper }}</div>
-      <span>Hola, {{ user.first_name|default:user.username }}</span>
-    </div>
-
     {% if messages %}{% for message in messages %}
     <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
       {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
@@ -40,11 +30,11 @@
 {# ---------- Barra inferior (celular) ---------- #}
 <nav class="app-tabbar d-md-none" aria-label="Navegación principal">
   <a href="{% url 'tareas' %}" class="{% if n == 'tareas' or n == 'actividad_nueva' or n == 'actividad_guardada' %}activo{% endif %}">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
     Tareas
   </a>
   <a href="{% url 'mis_actividades' %}" class="{% if n == 'mis_actividades' or n == 'actividad_detalle' %}activo{% endif %}">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h8"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h8"/></svg>
     Mis actividades
   </a>
 </nav>

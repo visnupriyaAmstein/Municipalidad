@@ -1,30 +1,36 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block titulo %}Iniciar sesión · Actividad Asignada{% endblock %}
 {% block contenido %}
-<section class="container my-5">
-  <div class="row justify-content-center">
-    <div class="col-md-6 col-lg-5">
-      <div class="card card-spa p-4">
-        <h3 class="mb-1 text-center">Actividad Asignada</h3>
-        <p class="text-center text-muted small mb-4">Ingresa con tu usuario o correo electrónico.</p>
-        {% if messages %}{% for message in messages %}
-        <div class="alert alert-{{ message.tags|default:'info' }} p-2 small">{{ message }}</div>
-        {% endfor %}{% endif %}
-        <form method="post">
-          {% csrf_token %}
-          <div class="mb-3">
-            <label for="username" class="form-label fw-semibold">Usuario o correo</label>
-            <input type="text" class="form-control" id="username" name="username" autofocus required>
-          </div>
-          <div class="mb-3">
-            <label for="password" class="form-label fw-semibold">Contraseña</label>
-            <input type="password" class="form-control" id="password" name="password" required>
-          </div>
-          <button type="submit" class="btn btn-spa-primary w-100 py-2 fw-bold">Ingresar</button>
-        </form>
-        <hr class="my-4">
-        <p class="text-center mb-0">¿No tienes cuenta? <a href="{% url 'registro' %}" class="fw-semibold">Regístrate aquí</a></p>
-      </div>
+<section class="login-wrap">
+  <div class="login-card">
+    <div class="login-marca">
+      <img src="{% static 'images/logo-la-serena-blanco.png' %}" alt="Ilustre Municipalidad de La Serena">
+      <p>Registro de avances y evidencia fotográfica de las tareas municipales.</p>
+    </div>
+
+    <div class="login-form">
+      <h1>Iniciar sesión</h1>
+      <p class="text-muted mb-4">Ingresa con tu usuario o correo institucional.</p>
+
+      {% if messages %}{% for message in messages %}
+      <div class="alert alert-{{ message.tags|default:'info' }} py-2">{{ message }}</div>
+      {% endfor %}{% endif %}
+
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label for="username" class="form-label">Usuario o correo</label>
+          <input type="text" class="form-control" id="username" name="username" autocomplete="username" autofocus required>
+        </div>
+        <div class="mb-4">
+          <label for="password" class="form-label">Contraseña</label>
+          <input type="password" class="form-control" id="password" name="password" autocomplete="current-password" required>
+        </div>
+        <button type="submit" class="btn btn-muni w-100 py-2">Ingresar</button>
+      </form>
+
+      <p class="ayuda">Las cuentas las crea la administración municipal. Si no tienes acceso, solicítalo a tu jefatura.</p>
     </div>
   </div>
 </section>

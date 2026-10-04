@@ -1,17 +1,60 @@
 {% extends 'administrador/base_admin.html' %}
-{% block titulo %}{{ titulo_form }} · Administración{% endblock %}
+{% block titulo %}{{ titulo_form }} · Administración<script>
+document.querySelectorAll('.acciones-asignados button').forEach(function (b) {
+  b.addEventListener('click', function () {
+    document.querySelectorAll('#listaAsignados input[type=checkbox]').forEach(function (c) {
+      c.checked = b.dataset.marcar === '1';
+    });
+  });
+});
+</script>
+{% endblock %}
 {% block panel_contenido %}
-<h3 class="fw-bold mb-3">{{ titulo_form }}</h3>
-<form method="post" class="card card-spa p-4" style="max-width:640px">
+<a href="{% url 'lista_tareas' %}" class="btn-volver-link"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg> Gestión de tareas</a>
+<form method="post" class="card-muni pad" style="max-width:680px">
   {% csrf_token %}
+  <h1 class="page-title mb-4">{{ titulo_form }}</h1>
   {% for f in form %}
-    <div class="mb-3 {% if f.name == 'activa' %}form-check{% endif %}">
-      {% if f.name == 'activa' %}{{ f }}<label class="form-check-label" for="{{ f.id_for_label }}">Tarea activa (visible para los usuarios)</label>
-      {% else %}<label class="form-label fw-semibold" for="{{ f.id_for_label }}">{{ f.label }}</label>{{ f }}{% endif %}
-      {% for e in f.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+    {% if f.name == 'asignados' %}
+    <fieldset class="mb-4">
+      <legend class="form-label mb-1">Asignar a</legend>
+      <p class="text-muted small mb-2">Solo los funcionarios marcados verán esta tarea y se contará en su porcentaje de avance.</p>
+      {% if f.field.queryset %}
+      <div class="lista-asignados" id="listaAsignados">
+        {% for opcion in f %}<div>{{ opcion }}</div>{% endfor %}
+      </div>
+      <div class="acciones-asignados">
+        <button type="button" data-marcar="1">Marcar todos</button>
+        <button type="button" data-marcar="0">Desmarcar todos</button>
+      </div>
+      {% else %}
+      <div class="alert alert-info mb-0">No hay funcionarios creados todavía. Créalos desde el panel /admin/ con el grupo "Usuario".</div>
+      {% endif %}
+      {% for e in f.errors %}<div class="error-campo">{{ e }}</div>{% endfor %}
+    </fieldset>
+    {% elif f.name == 'activa' %}
+    <div class="form-check form-switch mb-4">
+      {{ f }}<label class="form-check-label" for="{{ f.id_for_label }}">Tarea activa (visible para los funcionarios)</label>
     </div>
+    {% else %}
+    <div class="mb-3">
+      <label class="form-label" for="{{ f.id_for_label }}">{{ f.label }}</label>{{ f }}
+      {% for e in f.errors %}<div class="error-campo">{{ e }}</div>{% endfor %}
+    </div>
+    {% endif %}
   {% endfor %}
-  <div class="d-flex gap-2"><button class="btn btn-spa-primary px-4">Guardar</button>
-    <a href="{% url 'lista_tareas' %}" class="btn btn-outline-secondary">Cancelar</a></div>
+  <div class="d-flex gap-2 pt-2 border-top" style="border-color:var(--linea)!important">
+    <button class="btn btn-muni px-4 mt-3">Guardar tarea</button>
+    <a href="{% url 'lista_tareas' %}" class="btn btn-muni-outline mt-3">Cancelar</a>
+  </div>
 </form>
+<script>
+document.querySelectorAll('.acciones-asignados button').forEach(function (b) {
+  b.addEventListener('click', function () {
+    document.querySelectorAll('#listaAsignados input[type=checkbox]').forEach(function (c) {
+      c.checked = b.dataset.marcar === '1';
+    });
+  });
+});
+</script>
 {% endblock %}

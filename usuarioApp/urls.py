@@ -5,7 +5,6 @@ urlpatterns = [
     path('', views.inicio, name='inicio_usuario'),
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
-    path('registro/', views.registro_view, name='registro'),
 
     # Tareas creadas por el administrador
     path('tareas/', views.tareas, name='tareas'),

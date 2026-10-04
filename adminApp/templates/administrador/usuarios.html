@@ -1,19 +1,32 @@
 {% extends 'administrador/base_admin.html' %}
-{% block titulo %}Actividades por usuario · Administración{% endblock %}
+{% block titulo %}Avance por funcionario · Administración{% endblock %}
 {% block panel_contenido %}
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-  <h3 class="fw-bold m-0">Actividades por usuario</h3>
-  <form method="get" class="d-flex gap-2">
-    <input type="search" name="q" value="{{ q }}" class="form-control" placeholder="Buscar usuario">
-    <button class="btn btn-spa-primary">Buscar</button></form>
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Avance por funcionario</h1>
+    <p class="page-sub">Porcentaje de tareas asignadas (activas) con un reporte aprobado.</p>
+  </div>
+  <form method="get" class="buscador" role="search">
+    <input type="search" name="q" value="{{ q }}" class="form-control" placeholder="Buscar funcionario" aria-label="Buscar funcionario">
+    <button class="btn btn-muni px-3">Buscar</button></form>
 </div>
-<div class="table-responsive"><table class="table table-hover bg-white align-middle">
-  <thead><tr><th>Usuario</th><th>Nombre</th><th>Correo</th><th>Actividades</th><th></th></tr></thead>
+<div class="tabla-muni"><div class="table-responsive"><table class="table table-hover align-middle">
+  <thead><tr><th>Funcionario</th><th>Avance</th><th>Completadas</th><th>Por evaluar</th><th>Reportes</th><th></th></tr></thead>
   <tbody>
   {% for u in usuarios %}
-    <tr><td class="fw-semibold">{{ u.username }}</td><td>{{ u.get_full_name|default:"—" }}</td><td>{{ u.email|default:"—" }}</td>
-      <td><span class="badge bg-warning text-dark fs-6">{{ u.total }}</span></td>
-      <td class="text-end"><a class="btn btn-sm btn-spa-primary" href="{% url 'usuario_actividades' u.pk %}">Ver actividades</a></td></tr>
-  {% empty %}<tr><td colspan="5" class="text-center text-muted py-3">No hay usuarios.</td></tr>{% endfor %}
-  </tbody></table></div>
+    <tr><td><span class="fw-semibold">{{ u.get_full_name|default:u.username }}</span><br><small class="text-muted">{{ u.username }}</small></td>
+      <td>
+        {% if u.avance.asignadas %}
+        <div class="avance-celda">
+          <div class="avance-barra {% if u.avance.porcentaje == 100 %}completa{% endif %}" role="progressbar" aria-valuenow="{{ u.avance.porcentaje }}" aria-valuemin="0" aria-valuemax="100" aria-label="Avance de {{ u.username }}"><span style="width: {{ u.avance.porcentaje }}%"></span></div>
+          <b>{{ u.avance.porcentaje }}%</b>
+        </div>
+        {% else %}<span class="text-muted small">Sin tareas asignadas</span>{% endif %}
+      </td>
+      <td>{{ u.avance.completadas }} de {{ u.avance.asignadas }}</td>
+      <td>{% if u.pendientes %}<span class="chip-eval PENDIENTE">{{ u.pendientes }}</span>{% else %}<span class="text-muted">—</span>{% endif %}</td>
+      <td><span class="chip-numero">{{ u.total }}</span></td>
+      <td class="text-end"><a class="btn btn-sm btn-muni-outline" href="{% url 'usuario_actividades' u.pk %}">Ver detalle</a></td></tr>
+  {% empty %}<tr><td colspan="6" class="vacio">No hay funcionarios{% if q %} para "{{ q }}"{% endif %}.</td></tr>{% endfor %}
+  </tbody></table></div></div>
 {% endblock %}

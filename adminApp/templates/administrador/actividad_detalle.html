@@ -1,19 +1,88 @@
 {% extends 'administrador/base_admin.html' %}
 {% block titulo %}{{ a.codigo }} · Administración{% endblock %}
 {% block panel_contenido %}
-<a href="{% url 'usuario_actividades' a.usuario.pk %}" class="btn btn-outline-secondary btn-sm mb-3">← Actividades de {{ a.usuario.username }}</a>
-<div class="card card-spa p-4">
-  <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
-    <div><h4 class="fw-bold mb-1">{{ a.tarea.titulo }}</h4><span class="badge bg-secondary">{{ a.tarea.area }}</span></div>
-    <span class="codigo-generado m-0 fs-5">{{ a.codigo }}</span>
-  </div><hr>
-  <p class="mb-1"><strong>Usuario:</strong> {{ a.usuario.get_full_name|default:a.usuario.username }} ({{ a.usuario.email }})</p>
-  <p class="mb-1"><strong>Tarea a realizar:</strong> {{ a.tarea.descripcion|default:"—" }}</p>
-  <p class="mb-1"><strong>Fecha:</strong> {{ a.fecha|date:"d/m/Y" }} · <strong>Enviada:</strong> {{ a.creado|date:"d/m/Y H:i" }}</p>
-  <p class="mb-3"><strong>Lo que hizo:</strong><br>{{ a.descripcion|linebreaksbr }}</p>
-  <div class="row g-3">
-    <div class="col-md-6"><div class="fw-semibold mb-1">Antes</div><img class="foto-evidencia" src="{{ a.foto_antes.url }}" alt="Antes"></div>
-    <div class="col-md-6"><div class="fw-semibold mb-1">Después</div><img class="foto-evidencia" src="{{ a.foto_despues.url }}" alt="Después"></div>
+<a href="{% if a.estado == 'PENDIENTE' %}{% url 'por_evaluar' %}{% else %}{% url 'usuario_actividades' a.usuario.pk %}{% endif %}" class="btn-volver-link">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+  {% if a.estado == 'PENDIENTE' %}Reportes por evaluar{% else %}Avance de {{ a.usuario.get_full_name|default:a.usuario.username }}{% endif %}
+</a>
+<article class="card-muni pad">
+  <div class="detalle-cabecera">
+    <div>
+      <span class="chip-area">{{ a.tarea.area }}</span>
+      <h1>{{ a.tarea.titulo }}</h1>
+    </div>
+    <div class="d-flex flex-column align-items-end gap-2">
+      <span class="chip-codigo fs-6">{{ a.codigo }}</span>
+      <span class="chip-eval {{ a.estado }}">{{ a.get_estado_display }}</span>
+    </div>
   </div>
-</div>
+
+  <dl class="datos">
+    <div><dt>Funcionario</dt><dd><a href="{% url 'usuario_actividades' a.usuario.pk %}">{{ a.usuario.get_full_name|default:a.usuario.username }}</a></dd></div>
+    <div><dt>Fecha del trabajo</dt><dd>{{ a.fecha|date:"d/m/Y" }}</dd></div>
+    <div><dt>Enviado</dt><dd>{{ a.creado|date:"d/m/Y H:i" }}</dd></div>
+    {% if a.tarea.ubicacion %}<div><dt>Ubicación</dt><dd>{{ a.tarea.ubicacion }}</dd></div>{% endif %}
+  </dl>
+
+  {% if a.tarea.descripcion %}
+  <div class="bloque-texto"><h2>Tarea solicitada</h2><p>{{ a.tarea.descripcion }}</p></div>
+  {% endif %}
+  <div class="bloque-texto"><h2>Lo que realizó</h2><p>{{ a.descripcion|linebreaksbr }}</p></div>
+
+  <div class="fotos-grid">
+    <figure><figcaption>Antes</figcaption><img class="foto-evidencia" src="{{ a.foto_antes.url }}" alt="Foto antes"></figure>
+    <figure><figcaption>Después</figcaption><img class="foto-evidencia" src="{{ a.foto_despues.url }}" alt="Foto después"></figure>
+  </div>
+
+  {% if a.estado != 'PENDIENTE' %}
+  <div class="resultado-eval {{ a.estado }}">
+    <strong>{{ a.get_estado_display }}</strong>
+    <small>· por {{ a.evaluado_por.get_full_name|default:a.evaluado_por.username|default:"—" }}, {{ a.evaluado_en|date:"d/m/Y H:i" }}</small>
+    {% if a.observacion %}<p>{{ a.observacion|linebreaksbr }}</p>{% endif %}
+  </div>
+  {% endif %}
+
+  <form method="post" action="{% url 'evaluar_actividad' a.pk %}" class="evaluacion" id="formEvaluar">
+    {% csrf_token %}
+    <h2>{% if a.estado == 'PENDIENTE' %}Evaluar reporte{% else %}Cambiar evaluación{% endif %}</h2>
+    <p class="text-muted small mb-0">Si apruebas, la tarea cuenta como completada en el avance del funcionario. Si rechazas, deberá enviar un nuevo reporte.</p>
+
+    {% with valor=form.estado.value %}
+    <div class="opciones-eval" role="radiogroup" aria-label="Resultado de la evaluación">
+      <label class="opcion-eval aprobar">
+        <input type="radio" name="estado" value="APROBADA" {% if valor == 'APROBADA' %}checked{% endif %}>
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>Aprobar</span>
+      </label>
+      <label class="opcion-eval rechazar">
+        <input type="radio" name="estado" value="RECHAZADA" {% if valor == 'RECHAZADA' %}checked{% endif %}>
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>Rechazar</span>
+      </label>
+    </div>
+    {% endwith %}
+    {% for e in form.estado.errors %}<div class="error-campo">{{ e }}</div>{% endfor %}
+
+    <label class="form-label" for="{{ form.observacion.id_for_label }}">Observación para el funcionario <span class="text-muted fw-normal" id="obsAyuda">(opcional)</span></label>
+    {{ form.observacion }}
+    {% for e in form.observacion.errors %}<div class="error-campo">{{ e }}</div>{% endfor %}
+
+    <div class="d-flex flex-wrap gap-2 mt-3">
+      <button type="submit" class="btn btn-muni px-4">Guardar evaluación</button>
+      {% if siguiente %}<button type="submit" name="continuar" value="1" class="btn btn-muni-outline">Guardar y evaluar el siguiente</button>{% endif %}
+    </div>
+  </form>
+</article>
+
+<script>
+// La observación pasa a ser obligatoria (visualmente) cuando se elige "Rechazar"
+(function () {
+  var form = document.getElementById('formEvaluar');
+  var ayuda = document.getElementById('obsAyuda');
+  function actualizar() {
+    var rechazo = form.querySelector('input[name=estado][value=RECHAZADA]').checked;
+    ayuda.textContent = rechazo ? '(obligatoria al rechazar)' : '(opcional)';
+  }
+  form.querySelectorAll('input[name=estado]').forEach(function (r) { r.addEventListener('change', actualizar); });
+  actualizar();
+})();
+</script>
 {% endblock %}

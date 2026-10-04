@@ -1,13 +1,13 @@
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.models import Group, User
+from django.contrib.auth.models import User
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
 
 from adminApp.models import Tarea
-from .forms import ActividadForm, RegistroForm
+from .forms import ActividadForm
 from .models import Actividad
 from .roles import obtener_rol, ADMINISTRADOR
 
@@ -49,25 +49,6 @@ def login_view(request):
     return render(request, 'usuario/login.html')
 
 
-def registro_view(request):
-    """Todo registro público queda en el grupo Usuario."""
-    if request.user.is_authenticated:
-        return _redirect_by_role(request.user)
-    if request.method == 'POST':
-        form = RegistroForm(request.POST)
-        if form.is_valid():
-            usuario = form.save()
-            grupo, _ = Group.objects.get_or_create(name='Usuario')
-            usuario.groups.add(grupo)
-            login(request, usuario)
-            messages.success(request, f"Bienvenido/a {usuario.first_name}, tu cuenta fue creada.")
-            return _redirect_by_role(usuario)
-        messages.error(request, "Revisa los datos ingresados, hay errores en el formulario.")
-    else:
-        form = RegistroForm()
-    return render(request, 'usuario/registro.html', {'form': form})
-
-
 def logout_view(request):
     logout(request)
     messages.info(request, "Has cerrado sesión correctamente.")
@@ -77,18 +58,28 @@ def logout_view(request):
 # ---------------- Tareas y actividades del usuario ----------------
 @login_required
 def tareas(request):
-    """Tareas municipales creadas por el administrador (solo las activas)."""
+    """Tareas activas asignadas a este funcionario, con su estado y el porcentaje de avance."""
+    from adminApp.avance import ETIQUETAS, avance_de_usuario
     q = request.GET.get('q', '').strip()
-    lista = Tarea.objects.filter(activa=True).annotate(
+    lista = Tarea.objects.filter(activa=True, asignados=request.user).annotate(
         mis_reportes=Count('actividades', filter=Q(actividades__usuario=request.user)))
     if q:
         lista = lista.filter(Q(titulo__icontains=q) | Q(area__icontains=q) | Q(ubicacion__icontains=q))
-    return render(request, 'usuario/tareas.html', {'tareas': lista, 'q': q})
+    avance = avance_de_usuario(request.user)
+    lista = list(lista)
+    for t in lista:
+        t.estado_avance = avance.estado_por_tarea.get(t.pk, 'SIN_REPORTE')
+        t.estado_texto = ETIQUETAS[t.estado_avance]
+    return render(request, 'usuario/tareas.html', {'tareas': lista, 'q': q, 'avance': avance})
 
 
 @login_required
 def actividad_nueva(request, tarea_id):
-    tarea = get_object_or_404(Tarea, pk=tarea_id, activa=True)
+    # Solo tareas activas y asignadas a este funcionario
+    tarea = get_object_or_404(Tarea, pk=tarea_id, activa=True, asignados=request.user)
+    if Actividad.objects.filter(tarea=tarea, usuario=request.user, estado=Actividad.Estado.APROBADA).exists():
+        messages.info(request, f'La tarea "{tarea.titulo}" ya fue aprobada; no necesitas reportarla de nuevo.')
+        return redirect('tareas')
     if request.method == 'POST':
         form = ActividadForm(request.POST, request.FILES)
         if form.is_valid():
@@ -117,13 +108,17 @@ def mis_actividades(request):
     """Lista propia con búsqueda por código o nombre de la tarea."""
     q = request.GET.get('q', '').strip()
     lista = Actividad.objects.filter(usuario=request.user).select_related('tarea')
+    estado = request.GET.get('estado', '')
+    if estado in Actividad.Estado.values:
+        lista = lista.filter(estado=estado)
     if q:
         lista = lista.filter(Q(codigo__icontains=q) | Q(tarea__titulo__icontains=q))
-    return render(request, 'usuario/mis_actividades.html', {'actividades': lista, 'q': q})
+    return render(request, 'usuario/mis_actividades.html', {
+        'actividades': lista, 'q': q, 'estado': estado, 'estados': Actividad.Estado.choices})
 
 
 @login_required
 def actividad_detalle(request, codigo):
-    actividad = get_object_or_404(Actividad.objects.select_related('tarea'),
+    actividad = get_object_or_404(Actividad.objects.select_related('tarea', 'evaluado_por'),
                                   codigo=codigo.upper(), usuario=request.user)
     return render(request, 'usuario/actividad_detalle.html', {'a': actividad})

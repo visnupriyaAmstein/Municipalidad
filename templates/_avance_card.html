@@ -1,0 +1,19 @@
+{# Tarjeta de avance. Requiere la variable "avance" (adminApp.avance.Avance). Se usa en admin y en la vista del funcionario. #}
+<section class="card-muni avance-card" aria-label="Avance de tareas">
+  <div class="avance-pct {% if avance.asignadas and avance.porcentaje == 100 %}completa{% endif %}">
+    {{ avance.porcentaje }}%<small>de avance</small>
+  </div>
+  <div class="avance-detalle">
+    <div class="avance-barra {% if avance.asignadas and avance.porcentaje == 100 %}completa{% endif %}" role="progressbar" aria-valuenow="{{ avance.porcentaje }}" aria-valuemin="0" aria-valuemax="100" aria-label="Porcentaje de avance"><span style="width: {{ avance.porcentaje }}%"></span></div>
+    {% if avance.asignadas %}
+    <div class="avance-cifras">
+      <span><b>{{ avance.completadas }}</b> de <b>{{ avance.asignadas }}</b> tareas completadas</span>
+      {% if avance.en_revision %}<span><b>{{ avance.en_revision }}</b> en revisión</span>{% endif %}
+      {% if avance.rechazadas %}<span><b>{{ avance.rechazadas }}</b> rechazada{{ avance.rechazadas|pluralize }}</span>{% endif %}
+      {% if avance.sin_reporte %}<span><b>{{ avance.sin_reporte }}</b> sin reporte</span>{% endif %}
+    </div>
+    {% else %}
+    <div class="avance-cifras">No hay tareas activas asignadas.</div>
+    {% endif %}
+  </div>
+</section>

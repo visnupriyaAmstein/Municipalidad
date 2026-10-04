@@ -6,67 +6,55 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>{% block titulo %}Actividad Asignada · La Serena{% endblock %}</title>
+  <link rel="icon" type="image/png" href="{% static 'images/favicon.png' %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
-  <link rel="stylesheet" href="{% static 'css/custom.css' %}?v=3">
+  <link rel="stylesheet" href="{% static 'css/custom.css' %}?v=4">
 </head>
 
 <body class="d-flex flex-column min-vh-100 {% block body_class %}{% endblock %}">
 
-  <nav class="navbar navbar-expand-lg navbar-spa">
-    <div class="container-fluid">
-      <a class="navbar-brand" href="{% url 'main' %}">
-        <img src="{% static 'images/logo-iniciales-cafe.png' %}" alt="Actividad Asignada">
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="marca" href="{% url 'main' %}" aria-label="Inicio · Ilustre Municipalidad de La Serena">
+        <img class="marca-escudo" src="{% static 'images/escudo-la-serena.png' %}" alt="">
+        <img class="marca-texto" src="{% static 'images/texto-la-serena.png' %}" alt="La Serena, Ilustre Municipalidad">
+        <span class="marca-separador ocultable" aria-hidden="true"></span>
+        <span class="marca-app">Actividad Asignada
+          <small>{% if rol_usuario == 'Administrador' %}Administración{% else %}Registro de tareas municipales{% endif %}</small>
+        </span>
       </a>
 
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSpa"
-        aria-controls="navbarSpa" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-
-      <div class="collapse navbar-collapse" id="navbarSpa">
-        <ul class="navbar-nav ms-auto">
-          {% if user.is_authenticated %}
-            {% if rol_usuario == 'Administrador' %}
-              <li class="nav-item"><a class="nav-link" href="{% url 'panel_admin' %}">Panel</a></li>
-              <li class="nav-item"><a class="nav-link" href="{% url 'lista_tareas' %}">Tareas</a></li>
-              <li class="nav-item"><a class="nav-link" href="{% url 'usuarios_admin' %}">Usuarios</a></li>
-            {% else %}
-              <li class="nav-item"><a class="nav-link" href="{% url 'tareas' %}">Tareas</a></li>
-              <li class="nav-item"><a class="nav-link" href="{% url 'mis_actividades' %}">Mis actividades</a></li>
-            {% endif %}
-          {% endif %}
-        </ul>
-
-        {% if user.is_authenticated %}
-        <div class="d-flex align-items-center gap-2 ms-lg-3">
-          <span class="btn btn-spa-secondary btn-sm disabled">
-            {{ user.first_name|default:user.username }} · {{ rol_usuario }}
-          </span>
-          <form action="{% url 'logout' %}" method="post" class="d-inline">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-outline-light btn-sm">Cerrar sesión</button>
-          </form>
-        </div>
-        {% else %}
-        <div class="d-flex align-items-center gap-2 ms-lg-3">
-          <a href="{% url 'login' %}" class="btn btn-spa-secondary btn-sm">Iniciar sesión</a>
-          <a href="{% url 'registro' %}" class="btn btn-outline-light btn-sm">Registrarse</a>
-        </div>
-        {% endif %}
+      {% if user.is_authenticated %}
+      <div class="topbar-user">
+        <span class="nombre">{{ user.get_full_name|default:user.username }}<small>{{ rol_usuario }}</small></span>
+        <form action="{% url 'logout' %}" method="post" class="m-0">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-salir" aria-label="Cerrar sesión">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+            <span>Cerrar sesión</span>
+          </button>
+        </form>
       </div>
+      {% endif %}
     </div>
-  </nav>
+  </header>
 
   <main class="flex-grow-1 d-flex flex-column">
     {% block contenido %}{% endblock %}
   </main>
 
-  <footer class="footer-spa">
-    <p class="mb-0">Actividad Asignada &copy; 2026 - Ilustre Municipalidad de La Serena</p>
+  <footer class="pie">
+    <div class="pie-inner">
+      <img src="{% static 'images/escudo-la-serena-blanco.png' %}" alt="">
+      <span>Actividad Asignada &copy; {% now "Y" %} · Ilustre Municipalidad de La Serena</span>
+    </div>
   </footer>
 
   <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
-  <script src="{% static 'js/custom.js' %}?v=3"></script>
+  <script src="{% static 'js/custom.js' %}?v=4"></script>
 </body>
 
 </html>

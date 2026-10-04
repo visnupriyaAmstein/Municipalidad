@@ -1,28 +1,39 @@
 {% extends 'administrador/base_admin.html' %}
 {% block titulo %}Tareas · Administración{% endblock %}
 {% block panel_contenido %}
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-  <h3 class="fw-bold m-0">Gestión de tareas</h3>
-  <a href="{% url 'crear_tarea' %}" class="btn btn-naranja px-4">+ Nueva tarea</a>
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Gestión de tareas</h1>
+    <p class="page-sub">Cada funcionario solo ve las tareas activas que tiene asignadas.</p>
+  </div>
+  <a href="{% url 'crear_tarea' %}" class="btn btn-muni px-3">Nueva tarea</a>
 </div>
-<form method="get" class="row g-2 mb-3">
-  <div class="col-md-6"><input type="search" name="q" value="{{ q }}" class="form-control" placeholder="Buscar por título, área o ubicación"></div>
-  <div class="col-md-3"><select name="estado" class="form-select">
-    <option value="">Todas</option>
+
+<form method="get" class="card-muni p-3 mb-3 row g-2 mx-0 align-items-center" role="search">
+  <div class="col-md-6"><input type="search" name="q" value="{{ q }}" class="form-control" placeholder="Buscar por título, área o ubicación" aria-label="Buscar tareas"></div>
+  <div class="col-7 col-md-3"><select name="estado" class="form-select" aria-label="Estado">
+    <option value="">Todos los estados</option>
     <option value="activa" {% if estado == 'activa' %}selected{% endif %}>Activas</option>
     <option value="inactiva" {% if estado == 'inactiva' %}selected{% endif %}>Inactivas</option></select></div>
-  <div class="col-md-3"><button class="btn btn-spa-primary w-100">Filtrar</button></div>
+  <div class="col-5 col-md-3 d-flex gap-2">
+    <button class="btn btn-muni flex-grow-1">Filtrar</button>
+    {% if q or estado %}<a href="{% url 'lista_tareas' %}" class="btn btn-muni-outline">Limpiar</a>{% endif %}
+  </div>
 </form>
-<div class="table-responsive"><table class="table table-hover bg-white align-middle">
-  <thead><tr><th>Tarea</th><th>Área</th><th>Ubicación</th><th>Estado</th><th>Reportes</th><th></th></tr></thead>
+
+<div class="tabla-muni"><div class="table-responsive"><table class="table table-hover align-middle">
+  <thead><tr><th>Tarea</th><th>Área</th><th>Estado</th><th>Asignados</th><th>Completada por</th><th>Reportes</th><th></th></tr></thead>
   <tbody>
   {% for t in tareas %}
-    <tr><td class="fw-semibold">{{ t.titulo }}</td><td>{{ t.area }}</td><td>{{ t.ubicacion|default:"—" }}</td>
-      <td>{% if t.activa %}<span class="badge bg-success">Activa</span>{% else %}<span class="badge bg-secondary">Inactiva</span>{% endif %}</td>
-      <td>{{ t.total }}</td>
+    <tr><td class="fw-semibold">{{ t.titulo }}</td>
+      <td><span class="chip-area">{{ t.area }}</span></td>
+      <td>{% if t.activa %}<span class="chip-estado activa">Activa</span>{% else %}<span class="chip-estado inactiva">Inactiva</span>{% endif %}</td>
+      <td><span class="chip-numero">{{ t.n_asignados }}</span></td>
+      <td>{% if t.n_asignados %}{{ t.n_completadas }} de {{ t.n_asignados }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+      <td><span class="chip-numero">{{ t.total }}</span></td>
       <td class="text-end text-nowrap">
-        <a class="btn btn-sm btn-outline-secondary" href="{% url 'editar_tarea' t.pk %}">Editar</a>
+        <a class="btn btn-sm btn-muni-outline" href="{% url 'editar_tarea' t.pk %}">Editar</a>
         <a class="btn btn-sm btn-outline-danger" href="{% url 'eliminar_tarea' t.pk %}">Eliminar</a></td></tr>
-  {% empty %}<tr><td colspan="6" class="text-center text-muted py-3">No hay tareas.</td></tr>{% endfor %}
-  </tbody></table></div>
+  {% empty %}<tr><td colspan="7" class="vacio">No hay tareas{% if q or estado %} con esos filtros{% endif %}.</td></tr>{% endfor %}
+  </tbody></table></div></div>
 {% endblock %}

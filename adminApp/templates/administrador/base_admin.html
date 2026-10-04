@@ -1,27 +1,57 @@
 {% extends 'base.html' %}
+{% block body_class %}con-tabbar{% endblock %}
 {% block contenido %}
-<div class="d-flex flex-column flex-grow-1">
-  <div class="panel-header d-flex align-items-center gap-2">
-    <span class="rounded-circle bg-white d-flex align-items-center justify-content-center fw-bold"
-      style="width:44px;height:44px;color:var(--color-olivo-claro)">A</span>
-    <p class="m-0 fw-semibold">Administración · Tareas municipales</p>
-  </div>
-  <div class="container-fluid flex-grow-1 d-flex flex-column">
-    <div class="row flex-grow-1">
-      <div class="col-md-3 col-lg-2 p-0 sidebar-panel">
-        <div class="titulo-menu">Menú</div>
-        <a href="{% url 'panel_admin' %}" class="{% if seccion_activa == 'panel' %}activo{% endif %}">Resumen general</a>
-        <a href="{% url 'lista_tareas' %}" class="{% if seccion_activa == 'tareas' %}activo{% endif %}">Gestión de tareas</a>
-        <a href="{% url 'usuarios_admin' %}" class="{% if seccion_activa == 'usuarios' %}activo{% endif %}">Actividades por usuario</a>
-      </div>
-      <div class="col-md-9 col-lg-10 py-4">
-        {% if messages %}{% for message in messages %}
-        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
-          {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
-        </div>{% endfor %}{% endif %}
-        {% block panel_contenido %}{% endblock %}
-      </div>
-    </div>
-  </div>
+<div class="app-shell">
+
+  {# ---------- Menú lateral (tablet y escritorio) ---------- #}
+  <aside class="app-side d-none d-md-flex" aria-label="Menú de administración">
+    <div class="app-side-titulo">Administración</div>
+    <a href="{% url 'panel_admin' %}" class="app-link {% if seccion_activa == 'panel' %}activo{% endif %}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+      Resumen general
+    </a>
+    <a href="{% url 'por_evaluar' %}" class="app-link {% if seccion_activa == 'evaluar' %}activo{% endif %}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 12l2 2 4-4"/><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg>
+      Por evaluar
+      {% if n_por_evaluar %}<span class="contador" aria-label="{{ n_por_evaluar }} pendientes">{{ n_por_evaluar }}</span>{% endif %}
+    </a>
+    <a href="{% url 'lista_tareas' %}" class="app-link {% if seccion_activa == 'tareas' %}activo{% endif %}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      Gestión de tareas
+    </a>
+    <a href="{% url 'usuarios_admin' %}" class="app-link {% if seccion_activa == 'usuarios' %}activo{% endif %}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Avance por funcionario
+    </a>
+  </aside>
+
+  <section class="app-main">
+    {% if messages %}{% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+      {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+    </div>{% endfor %}{% endif %}
+    {% block panel_contenido %}{% endblock %}
+  </section>
 </div>
+
+{# ---------- Barra inferior (celular) ---------- #}
+<nav class="app-tabbar d-md-none" aria-label="Navegación de administración">
+  <a href="{% url 'panel_admin' %}" class="{% if seccion_activa == 'panel' %}activo{% endif %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+    Resumen
+  </a>
+  <a href="{% url 'por_evaluar' %}" class="{% if seccion_activa == 'evaluar' %}activo{% endif %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 12l2 2 4-4"/><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg>
+    Evaluar
+    {% if n_por_evaluar %}<span class="contador">{{ n_por_evaluar }}</span>{% endif %}
+  </a>
+  <a href="{% url 'lista_tareas' %}" class="{% if seccion_activa == 'tareas' %}activo{% endif %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+    Tareas
+  </a>
+  <a href="{% url 'usuarios_admin' %}" class="{% if seccion_activa == 'usuarios' %}activo{% endif %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    Avance
+  </a>
+</nav>
 {% endblock %}

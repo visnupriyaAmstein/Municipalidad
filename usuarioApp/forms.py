@@ -1,6 +1,4 @@
 from django import forms
-from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth.models import User
 from django.utils import timezone
 
 from .models import Actividad
@@ -14,10 +12,10 @@ class ActividadForm(forms.ModelForm):
         fields = ['descripcion', 'fecha', 'foto_antes', 'foto_despues']
         widgets = {
             'descripcion': forms.Textarea(attrs={
-                'class': 'form-control campo-verde', 'rows': 4,
+                'class': 'form-control campo', 'rows': 4,
                 'placeholder': 'Escribe lo que realizaste (mín. 10 caracteres)'}),
             # format ISO: si no, con el idioma es-cl el valor sale dd/mm/aaaa y el input date lo ignora
-            'fecha': forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date', 'class': 'form-control campo-verde'}),
+            'fecha': forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date', 'class': 'form-control campo'}),
             # visually-hidden (no d-none) para que el input siga siendo enfocable
             'foto_antes': forms.ClearableFileInput(attrs={'accept': 'image/*', 'class': 'visually-hidden'}),
             'foto_despues': forms.ClearableFileInput(attrs={'accept': 'image/*', 'class': 'visually-hidden'}),
@@ -51,39 +49,3 @@ class ActividadForm(forms.ModelForm):
 
     def clean_foto_despues(self):
         return self._validar_foto('foto_despues')
-
-
-class RegistroForm(UserCreationForm):
-    first_name = forms.CharField(
-        label='Nombre', max_length=150, required=True
-    )
-    last_name = forms.CharField(
-        label='Apellido', max_length=150, required=True
-    )
-    email = forms.EmailField(
-        label='Correo electrónico', required=True
-    )
-
-    class Meta:
-        model = User
-        fields = ['username', 'first_name', 'last_name', 'email', 'password1', 'password2']
-        labels = {'username': 'Nombre de usuario'}
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        for field in self.fields.values():
-            field.widget.attrs.update({'class': 'form-control'})
-        self.fields['password1'].label = 'Contraseña'
-        self.fields['password2'].label = 'Repetir contraseña'
-
-    def clean_email(self):
-        email = self.cleaned_data['email'].strip().lower()
-        if User.objects.filter(email__iexact=email).exists():
-            raise forms.ValidationError('Ya existe una cuenta con este correo.')
-        return email
-
-    def clean_first_name(self):
-        return self.cleaned_data['first_name'].strip().title()
-
-    def clean_last_name(self):
-        return self.cleaned_data['last_name'].strip().title()
