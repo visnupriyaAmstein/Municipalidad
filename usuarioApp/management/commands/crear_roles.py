@@ -9,6 +9,7 @@ PERMISOS_POR_ROL = {
         ('adminApp', 'tarea', CRUD),
         ('usuarioApp', 'actividad', CRUD),
         ('auth', 'user', CRUD),
+        ('adminApp', 'registroauditoria', ['view']),   # bitácora: solo lectura
     ],
     'Usuario': [
         ('adminApp', 'tarea', ['view']),

@@ -1,6 +1,8 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.core.paginator import Paginator
+from django.db import transaction
 from django.db.models import Count, Q
 from django.db.models.deletion import ProtectedError
 from django.shortcuts import get_object_or_404, redirect, render
@@ -8,9 +10,10 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from usuarioApp.models import Actividad
+from .auditoria import Accion, registrar
 from .avance import ETIQUETAS, avance_de_usuario, avance_de_usuarios
 from .forms import EvaluacionForm, TareaForm, funcionarios
-from .models import Tarea
+from .models import RegistroAuditoria, Tarea
 
 Estado = Actividad.Estado
 
@@ -57,10 +60,12 @@ def lista_tareas(request):
 def crear_tarea(request):
     form = TareaForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
-        tarea = form.save(commit=False)
-        tarea.creada_por = request.user
-        tarea.save()
-        form.save_m2m()  # guarda los funcionarios asignados
+        with transaction.atomic():  # la tarea y su registro de auditoría se guardan juntos
+            tarea = form.save(commit=False)
+            tarea.creada_por = request.user
+            tarea.save()
+            form.save_m2m()  # guarda los funcionarios asignados
+            registrar(request, Accion.TAREA_CREADA, objeto=f'tarea:{tarea.pk}', detalle=tarea.titulo)
         messages.success(request, f'Tarea "{tarea.titulo}" creada y asignada a '
                                   f'{tarea.asignados.count()} funcionario(s).')
         return redirect('lista_tareas')
@@ -73,7 +78,11 @@ def editar_tarea(request, pk):
     tarea = get_object_or_404(Tarea, pk=pk)
     form = TareaForm(request.POST or None, instance=tarea)
     if request.method == 'POST' and form.is_valid():
-        form.save()
+        cambios = ', '.join(form.changed_data) or 'sin cambios'
+        with transaction.atomic():
+            form.save()
+            registrar(request, Accion.TAREA_EDITADA, objeto=f'tarea:{tarea.pk}',
+                      detalle=f'{tarea.titulo} (campos: {cambios})')
         messages.success(request, 'Tarea actualizada.')
         return redirect('lista_tareas')
     return render(request, 'administrador/tarea_form.html', {
@@ -85,7 +94,10 @@ def eliminar_tarea(request, pk):
     tarea = get_object_or_404(Tarea, pk=pk)
     if request.method == 'POST':
         try:
-            tarea.delete()
+            with transaction.atomic():
+                titulo, pk_tarea = tarea.titulo, tarea.pk
+                tarea.delete()
+                registrar(request, Accion.TAREA_ELIMINADA, objeto=f'tarea:{pk_tarea}', detalle=titulo)
             messages.success(request, 'Tarea eliminada.')
         except ProtectedError:
             messages.error(request, 'No se puede eliminar: ya tiene actividades registradas. '
@@ -165,11 +177,16 @@ def evaluar_actividad(request, pk):
         return render(request, 'administrador/actividad_detalle.html', {
             'a': actividad, 'form': form, 'siguiente': siguiente, 'seccion_activa': 'evaluar'}, status=400)
 
-    actividad.estado = form.cleaned_data['estado']
-    actividad.observacion = form.cleaned_data['observacion']
-    actividad.evaluado_por = request.user
-    actividad.evaluado_en = timezone.now()
-    actividad.save(update_fields=['estado', 'observacion', 'evaluado_por', 'evaluado_en'])
+    estado_anterior = actividad.get_estado_display()
+    with transaction.atomic():  # la evaluación y su registro de auditoría se guardan juntos
+        actividad.estado = form.cleaned_data['estado']
+        actividad.observacion = form.cleaned_data['observacion']
+        actividad.evaluado_por = request.user
+        actividad.evaluado_en = timezone.now()
+        actividad.save(update_fields=['estado', 'observacion', 'evaluado_por', 'evaluado_en'])
+        registrar(request, Accion.REPORTE_EVALUADO, objeto=actividad.codigo,
+                  detalle=f'{estado_anterior} → {actividad.get_estado_display()}'
+                          + (f'. Observación: {actividad.observacion}' if actividad.observacion else ''))
 
     verbo = 'aprobada' if actividad.estado == Estado.APROBADA else 'rechazada'
     messages.success(request, f'Actividad {actividad.codigo} {verbo}.')
@@ -181,3 +198,19 @@ def evaluar_actividad(request, pk):
             return redirect('actividad_admin_detalle', pk=siguiente.pk)
         return redirect('por_evaluar')
     return redirect('actividad_admin_detalle', pk=actividad.pk)
+
+
+# ---------------- Bitácora de auditoría ----------------
+@login_required
+def bitacora(request):
+    """Consulta de la bitácora (solo lectura), con filtro por acción y búsqueda."""
+    q = request.GET.get('q', '').strip()[:100]
+    accion = request.GET.get('accion', '')
+    registros = RegistroAuditoria.objects.all()
+    if accion in Accion.values:
+        registros = registros.filter(accion=accion)
+    if q:
+        registros = registros.filter(Q(username__icontains=q) | Q(objeto__icontains=q) | Q(detalle__icontains=q))
+    pagina = Paginator(registros, 50).get_page(request.GET.get('page'))
+    return render(request, 'administrador/bitacora.html', {
+        'pagina': pagina, 'q': q, 'accion': accion, 'acciones': Accion.choices, 'seccion_activa': 'bitacora'})

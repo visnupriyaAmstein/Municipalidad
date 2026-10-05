@@ -516,3 +516,10 @@ body.modal-propio { overflow: hidden; }
 }
 .app-tabbar a { position: relative; }
 .app-tabbar .contador { position: absolute; top: .25rem; left: 55%; margin: 0; }
+
+/* Bitácora de auditoría */
+.chip-accion {
+  display: inline-block; background: var(--piedra); border: 1px solid var(--linea);
+  border-radius: 8px; padding: .2rem .55rem; font-size: .78rem; font-weight: 600; white-space: nowrap;
+}
+.chip-accion.alerta { background: var(--rojo-suave); border-color: transparent; color: var(--rojo); }

@@ -27,6 +27,8 @@ class RestriccionPorRolMiddleware:
         return self.get_response(request)
 
     def _denegar(self, request, user):
+        from adminApp.auditoria import Accion, registrar
         from usuarioApp.views import _redirect_by_role
+        registrar(request, Accion.ACCESO_DENEGADO, detalle=request.path)
         messages.error(request, "No tienes permiso para acceder a esa sección.")
         return _redirect_by_role(user)

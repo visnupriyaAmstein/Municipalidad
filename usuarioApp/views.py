@@ -1,5 +1,3 @@
-import logging
-
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.core.cache import cache
@@ -7,17 +5,18 @@ from django.http import FileResponse, Http404
 from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.db import transaction
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
 
+from adminApp.auditoria import Accion, registrar
 from adminApp.models import Tarea
 from .forms import ActividadForm
 from .models import Actividad
 from .roles import obtener_rol, ADMINISTRADOR
 
 
-log = logging.getLogger('seguridad')
 
 # Protección contra fuerza bruta (OWASP A07:2025): 5 fallos => bloqueo de 15 minutos
 MAX_INTENTOS = 5
@@ -56,7 +55,7 @@ def login_view(request):
         password_input = request.POST.get('password', '')
         clave_cache = _clave_intentos(request, login_input)
         if cache.get(clave_cache, 0) >= MAX_INTENTOS:
-            log.warning('LOGIN_BLOQUEADO usuario=%s ip=%s', login_input, _ip(request))
+            registrar(request, Accion.LOGIN_BLOQUEADO, username=login_input)
             messages.error(request, "Demasiados intentos fallidos. Espera 15 minutos e inténtalo de nuevo.")
             return render(request, 'usuario/login.html', status=429)
         usuario = authenticate(request, username=login_input, password=password_input)
@@ -67,13 +66,13 @@ def login_view(request):
         if usuario is not None:
             cache.delete(clave_cache)
             login(request, usuario)
-            log.info('LOGIN_OK usuario=%s ip=%s', usuario.username, _ip(request))
+            registrar(request, Accion.LOGIN_OK, usuario=usuario)
             messages.success(request, f"¡Bienvenido/a, {usuario.first_name or usuario.username}!")
             if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
                 return redirect(next_url)
             return _redirect_by_role(usuario)
         cache.set(clave_cache, cache.get(clave_cache, 0) + 1, BLOQUEO_SEGUNDOS)
-        log.warning('LOGIN_FALLIDO usuario=%s ip=%s', login_input, _ip(request))
+        registrar(request, Accion.LOGIN_FALLIDO, username=login_input)
         messages.error(request, "Usuario/correo o contraseña incorrectos.")
     return render(request, 'usuario/login.html')
 
@@ -81,7 +80,8 @@ def login_view(request):
 @require_POST
 def logout_view(request):
     """Solo POST (con token CSRF): un enlace malicioso no puede cerrar la sesión de otra persona."""
-    log.info('LOGOUT usuario=%s', request.user.get_username())
+    if request.user.is_authenticated:
+        registrar(request, Accion.LOGOUT)
     logout(request)
     messages.info(request, "Has cerrado sesión correctamente.")
     return redirect('login')
@@ -115,10 +115,13 @@ def actividad_nueva(request, tarea_id):
     if request.method == 'POST':
         form = ActividadForm(request.POST, request.FILES)
         if form.is_valid():
-            actividad = form.save(commit=False)
-            actividad.usuario = request.user
-            actividad.tarea = tarea
-            actividad.save()
+            # Transacción: el reporte y su registro de auditoría se guardan juntos o ninguno
+            with transaction.atomic():
+                actividad = form.save(commit=False)
+                actividad.usuario = request.user
+                actividad.tarea = tarea
+                actividad.save()
+                registrar(request, Accion.REPORTE_ENVIADO, objeto=actividad.codigo, detalle=f'tarea: {tarea.titulo}')
             return redirect('actividad_guardada', codigo=actividad.codigo)
     else:
         from django.utils import timezone
@@ -168,7 +171,7 @@ def media_protegida(request, ruta):
     if actividad is None:
         raise Http404
     if actividad.usuario_id != request.user.pk and obtener_rol(request.user) != ADMINISTRADOR:
-        log.warning('MEDIA_DENEGADA usuario=%s ruta=%s', request.user.username, ruta)
+        registrar(request, Accion.MEDIA_DENEGADA, detalle=ruta, objeto=actividad.codigo)
         raise Http404
     campo = actividad.foto_antes if actividad.foto_antes.name == ruta else actividad.foto_despues
     try:

@@ -307,3 +307,82 @@ class PruebasFuncionalesAdmin(BaseTestCase):
         nombres = [u.username for u in r.context['usuarios']]
         self.assertNotIn('admin', nombres)
         self.assertIn('funcionario', nombres)
+
+
+# ---------------- Trazabilidad: bitácora de auditoría (Ley 21.459 / OWASP A09:2025) ----------------
+from adminApp.models import RegistroAuditoria  # noqa: E402
+
+Accion = RegistroAuditoria.Accion
+
+
+@override_settings(MEDIA_ROOT=MEDIA_TMP)
+class PruebasTrazabilidad(BaseTestCase):
+
+    def test_cp_t01_login_queda_en_bitacora(self):
+        """CP-T01: el inicio de sesión exitoso y el fallido quedan registrados con usuario e IP."""
+        self.client.post(reverse('login'), {'username': 'funcionario', 'password': 'mala'})
+        self.client.post(reverse('login'), {'username': 'funcionario', 'password': CLAVE})
+        fallido = RegistroAuditoria.objects.get(accion=Accion.LOGIN_FALLIDO)
+        exitoso = RegistroAuditoria.objects.get(accion=Accion.LOGIN_OK)
+        self.assertEqual(fallido.username, 'funcionario')
+        self.assertEqual(exitoso.usuario, self.f1)
+        self.assertEqual(exitoso.ip, '127.0.0.1')
+
+    def test_cp_t02_reporte_enviado_queda_en_bitacora(self):
+        """CP-T02: el envío de un reporte queda registrado con su código."""
+        self.client.login(username='funcionario', password=CLAVE)
+        self.client.post(reverse('actividad_nueva', args=[self.t1.pk]), datos_actividad())
+        a = Actividad.objects.get()
+        r = RegistroAuditoria.objects.get(accion=Accion.REPORTE_ENVIADO)
+        self.assertEqual((r.usuario, r.objeto), (self.f1, a.codigo))
+
+    def test_cp_t03_evaluacion_queda_en_bitacora(self):
+        """CP-T03: la evaluación registra quién evaluó, el cambio de estado y la observación."""
+        a = self.crear_actividad(self.f1, self.t1)
+        self.client.login(username='admin', password=CLAVE)
+        self.client.post(reverse('evaluar_actividad', args=[a.pk]),
+                         {'estado': Estado.RECHAZADA, 'observacion': 'Falta foto del sector sur'})
+        r = RegistroAuditoria.objects.get(accion=Accion.REPORTE_EVALUADO)
+        self.assertEqual((r.usuario, r.objeto), (self.admin, a.codigo))
+        self.assertIn('En revisión → Rechazada', r.detalle)
+        self.assertIn('Falta foto del sector sur', r.detalle)
+
+    def test_cp_t04_gestion_de_tareas_queda_en_bitacora(self):
+        """CP-T04: crear, editar y eliminar tareas queda registrado."""
+        self.client.login(username='admin', password=CLAVE)
+        self.client.post(reverse('crear_tarea'), {'titulo': 'Limpieza de playa', 'area': 'Aseo',
+                                                  'activa': 'on', 'asignados': [self.f1.pk]})
+        t = Tarea.objects.get(titulo='Limpieza de playa')
+        self.client.post(reverse('editar_tarea', args=[t.pk]), {'titulo': 'Limpieza de playa', 'area': 'Aseo y Ornato',
+                                                                'activa': 'on', 'asignados': [self.f1.pk]})
+        self.client.post(reverse('eliminar_tarea', args=[t.pk]))
+        acciones = set(RegistroAuditoria.objects.filter(objeto=f'tarea:{t.pk}').values_list('accion', flat=True))
+        self.assertEqual(acciones, {Accion.TAREA_CREADA, Accion.TAREA_EDITADA, Accion.TAREA_ELIMINADA})
+        self.assertIn('area', RegistroAuditoria.objects.get(accion=Accion.TAREA_EDITADA).detalle)
+
+    def test_cp_t05_acceso_denegado_queda_en_bitacora(self):
+        """CP-T05: un funcionario que intenta entrar a administración queda registrado."""
+        self.client.login(username='funcionario', password=CLAVE)
+        self.client.get(reverse('panel_admin'))
+        r = RegistroAuditoria.objects.get(accion=Accion.ACCESO_DENEGADO)
+        self.assertEqual(r.usuario, self.f1)
+
+    def test_cp_t06_bitacora_solo_lectura(self):
+        """CP-T06: en /admin/ la bitácora no permite agregar, editar ni borrar registros."""
+        from django.contrib import admin
+        from django.test import RequestFactory
+        modelo_admin = admin.site._registry[RegistroAuditoria]
+        request = RequestFactory().get('/')
+        request.user = self.admin
+        self.assertFalse(modelo_admin.has_add_permission(request))
+        self.assertFalse(modelo_admin.has_change_permission(request))
+        self.assertFalse(modelo_admin.has_delete_permission(request))
+
+    def test_cp_t07_solo_el_admin_ve_la_bitacora(self):
+        """CP-T07: el administrador consulta y filtra la bitácora; un funcionario no puede verla."""
+        self.client.post(reverse('login'), {'username': 'funcionario', 'password': 'mala'})
+        self.client.login(username='admin', password=CLAVE)
+        r = self.client.get(reverse('bitacora'), {'accion': Accion.LOGIN_FALLIDO})
+        self.assertContains(r, 'funcionario')
+        self.client.login(username='funcionario', password=CLAVE)
+        self.assertEqual(self.client.get(reverse('bitacora')).status_code, 302)
