@@ -230,6 +230,23 @@ class PruebasIntegracion(BaseTestCase):
         self.client.post(reverse('eliminar_tarea', args=[self.t1.pk]))
         self.assertTrue(Tarea.objects.filter(pk=self.t1.pk).exists())
 
+    def test_cp_i07_no_se_elimina_funcionario_con_reportes(self):
+        """CP-I07: un funcionario con reportes no se puede eliminar; su evidencia se conserva (PROTECT)."""
+        from django.db.models import ProtectedError
+        a = self.crear_actividad(self.f1, self.t1)
+        with self.assertRaises(ProtectedError):
+            self.f1.delete()
+        self.assertTrue(User.objects.filter(pk=self.f1.pk).exists())
+        self.assertTrue(Actividad.objects.filter(pk=a.pk).exists())
+
+    def test_cp_i08_funcionario_desactivado_conserva_reportes(self):
+        """CP-I08: en lugar de eliminarlo, el funcionario se desactiva: no puede entrar y sus reportes se conservan."""
+        a = self.crear_actividad(self.f1, self.t1)
+        self.f1.is_active = False
+        self.f1.save()
+        self.assertFalse(self.client.login(username='funcionario', password=CLAVE))
+        self.assertTrue(Actividad.objects.filter(pk=a.pk, usuario=self.f1).exists())
+
     def test_cp_i06_panel_admin_promedio(self):
         """CP-I06 · HU-08: el panel calcula el promedio de avance."""
         self.crear_actividad(self.f1, self.t1, Estado.APROBADA)

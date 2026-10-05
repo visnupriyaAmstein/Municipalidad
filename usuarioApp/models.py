@@ -28,7 +28,7 @@ class Actividad(models.Model):
         RECHAZADA = 'RECHAZADA', 'Rechazada'
 
     codigo = models.CharField(max_length=12, unique=True, editable=False)
-    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='actividades')
+    usuario = models.ForeignKey(User, on_delete=models.PROTECT, related_name='actividades')  # PROTECT: no se borra la evidencia
     tarea = models.ForeignKey(Tarea, on_delete=models.PROTECT, related_name='actividades')
     descripcion = models.TextField(verbose_name='Descripción del avance')
     fecha = models.DateField(verbose_name='Fecha de realización')
