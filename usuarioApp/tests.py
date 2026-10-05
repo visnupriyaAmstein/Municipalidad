@@ -143,6 +143,22 @@ class PruebasFormularioActividad(BaseUsuario):
         self.assertIn('foto_antes', f.errors)
         self.assertIn('foto_despues', f.errors)
 
+    def test_cp_u26_extension_no_permitida(self):
+        """CP-U26 · HU-05: una imagen real en formato no permitido (GIF, BMP) es rechazada."""
+        for formato, nombre in (('GIF', 'animacion.gif'), ('BMP', 'imagen.bmp')):
+            buf = io.BytesIO()
+            Image.new('RGB', (10, 10)).save(buf, formato)
+            archivo = SimpleUploadedFile(nombre, buf.getvalue())
+            self.assertIn('foto_antes', self.form(foto_antes=archivo).errors, formato)
+
+    def test_cp_u27_extensiones_permitidas(self):
+        """CP-U27 · HU-05: JPG, JPEG, PNG y WEBP son aceptados."""
+        for formato, nombre in (('JPEG', 'a.jpg'), ('JPEG', 'b.jpeg'), ('PNG', 'c.png'), ('WEBP', 'd.webp')):
+            buf = io.BytesIO()
+            Image.new('RGB', (10, 10)).save(buf, formato)
+            archivo = SimpleUploadedFile(nombre, buf.getvalue())
+            self.assertTrue(self.form(foto_antes=archivo).is_valid(), nombre)
+
 
 # ---------------- Aceptación (usuario final) ----------------
 @override_settings(MEDIA_ROOT=MEDIA_TMP)
