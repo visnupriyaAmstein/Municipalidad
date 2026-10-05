@@ -170,6 +170,26 @@ class PruebasCSRFySesion(BaseTestCase):
                              {'username': 'admin', 'password': CLAVE})
         self.assertNotIn('evil.com', r.url)
 
+    def test_cp_s24_sesion_expira_por_inactividad(self):
+        """CP-S24: la sesión dura 30 minutos sin actividad y termina al cerrar el navegador."""
+        self.client.post(reverse('login'), {'username': 'funcionario', 'password': CLAVE})
+        self.assertEqual(settings.SESSION_COOKIE_AGE, 30 * 60)
+        self.assertTrue(settings.SESSION_SAVE_EVERY_REQUEST)
+        self.assertTrue(settings.SESSION_EXPIRE_AT_BROWSER_CLOSE)
+        # Cookie sin fecha de vencimiento: el navegador la borra al cerrarse
+        self.assertEqual(self.client.cookies[settings.SESSION_COOKIE_NAME]['expires'], '')
+
+    def test_cp_s24b_sesion_vencida_pide_login(self):
+        """CP-S24b: si pasan los 30 minutos sin actividad, el sistema vuelve a pedir inicio de sesión."""
+        from datetime import timedelta
+        from django.contrib.sessions.models import Session
+        from django.utils import timezone
+        self.client.post(reverse('login'), {'username': 'funcionario', 'password': CLAVE})
+        Session.objects.update(expire_date=timezone.now() - timedelta(seconds=1))  # simula 30 min sin uso
+        r = self.client.get(reverse('tareas'))
+        self.assertEqual(r.status_code, 302)
+        self.assertIn(reverse('login'), r.url)
+
 
 class PruebasConfiguracion(TestCase):
     """A04:2025 Cryptographic Failures / A02:2025 Security Misconfiguration"""
@@ -194,15 +214,25 @@ class PruebasConfiguracion(TestCase):
             self.assertIn(m, settings.MIDDLEWARE)
 
     def test_cp_s20_ajustes_para_produccion(self):
-        """CP-S20: con DEBUG=False deben existir HTTPS, cookies seguras y HSTS."""
+        """CP-S20: con USAR_HTTPS=True deben existir HTTPS, cookies seguras y HSTS."""
         import os
         import runpy
         from unittest import mock
-        with mock.patch.dict(os.environ, {'DEBUG': 'False'}):
+        with mock.patch.dict(os.environ, {'DEBUG': 'False', 'USAR_HTTPS': 'True'}):
             prod = runpy.run_module('config.settings', run_name='settings_produccion')
         faltan = [n for n in ('SECURE_SSL_REDIRECT', 'SESSION_COOKIE_SECURE', 'CSRF_COOKIE_SECURE',
                               'SECURE_HSTS_SECONDS') if not prod.get(n)]
         self.assertEqual(faltan, [], f'Faltan ajustes de producción: {faltan}')
+
+    def test_cp_s20b_local_sin_https_funciona(self):
+        """CP-S20b: en local (DEBUG=False, USAR_HTTPS=False) el sistema NO redirige a https://."""
+        import os
+        import runpy
+        from unittest import mock
+        with mock.patch.dict(os.environ, {'DEBUG': 'False', 'USAR_HTTPS': 'False'}):
+            local = runpy.run_module('config.settings', run_name='settings_local')
+        self.assertFalse(local.get('SECURE_SSL_REDIRECT', False))
+        self.assertFalse(local.get('SESSION_COOKIE_SECURE', False))
 
     def setUp(self):
         from django.core.cache import cache

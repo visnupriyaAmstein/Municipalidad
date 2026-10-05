@@ -160,8 +160,10 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 
 # ---------------- Seguridad (OWASP A02:2025) ----------------
-# En producción (DEBUG=False) se fuerza HTTPS, cookies seguras y HSTS.
-if not DEBUG:
+# HTTPS, cookies seguras y HSTS se activan SOLO en el servidor real (USAR_HTTPS=True en su .env).
+# No dependen de DEBUG: así el prototipo funciona en local con DEBUG=False sin redirigir a https://.
+USAR_HTTPS = os.getenv('USAR_HTTPS', 'False') == 'True'
+if USAR_HTTPS:
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
@@ -169,7 +171,9 @@ if not DEBUG:
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
 SESSION_COOKIE_HTTPONLY = True
-SESSION_COOKIE_AGE = 60 * 60 * 8          
+SESSION_COOKIE_AGE = 30 * 60               # la sesión expira tras 30 minutos sin actividad
+SESSION_SAVE_EVERY_REQUEST = True          # cada acción del usuario reinicia los 30 minutos
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True     # al cerrar el navegador la sesión termina
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
 SECURE_REFERRER_POLICY = 'same-origin'
