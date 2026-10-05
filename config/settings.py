@@ -19,9 +19,8 @@ from django.core.exceptions import ImproperlyConfigured
 
 # Cargar variables del archivo .env
 load_dotenv()
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+
 BASE_DIR = Path(__file__).resolve().parent.parent
-# Creamos una constante para los templates
 TEMPLATES_DIR = os.path.join(BASE_DIR,'templates')
 
 # Quick-start development settings - unsuitable for production
@@ -32,8 +31,6 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 if not SECRET_KEY:
     raise ImproperlyConfigured('Falta SECRET_KEY en el archivo .env')
 
-# SECURITY WARNING: don't run with debug turned on in production!
-# Solo es True si en el .env dice exactamente DEBUG=True
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 # Hosts separados por coma en el .env, ej: ALLOWED_HOSTS=localhost,127.0.0.1
@@ -160,3 +157,34 @@ MESSAGE_TAGS = {
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+
+# ---------------- Seguridad (OWASP A02:2025) ----------------
+# En producción (DEBUG=False) se fuerza HTTPS, cookies seguras y HSTS.
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_AGE = 60 * 60 * 8          
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'
+SECURE_REFERRER_POLICY = 'same-origin'
+DATA_UPLOAD_MAX_MEMORY_SIZE = 12 * 1024 * 1024   
+
+# ---------------- Trazabilidad (Ley 21.459: registro de accesos) ----------------
+LOG_DIR = BASE_DIR / 'logs'
+LOG_DIR.mkdir(exist_ok=True)
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {'std': {'format': '%(asctime)s %(levelname)s %(message)s'}},
+    'handlers': {
+        'archivo': {'class': 'logging.FileHandler', 'filename': LOG_DIR / 'seguridad.log',
+                    'formatter': 'std', 'encoding': 'utf-8'},
+    },
+    'loggers': {'seguridad': {'handlers': ['archivo'], 'level': 'INFO', 'propagate': False}},
+}
