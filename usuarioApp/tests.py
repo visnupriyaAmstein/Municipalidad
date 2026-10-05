@@ -201,3 +201,37 @@ class PruebasAceptacion(BaseUsuario):
         otra.asignados.add(self.f2)
         r = self.client.get(reverse('tareas'))
         self.assertNotContains(r, 'Tarea ajena de prueba')
+
+
+# ---------------- Protección de datos en las fotos (Ley 19.628 / 21.719) ----------------
+@override_settings(MEDIA_ROOT=MEDIA_TMP)
+class PruebasDatosEnFotos(BaseUsuario):
+
+    def test_cp_u28_foto_se_guarda_con_nombre_aleatorio(self):
+        """CP-U28: el nombre original de la foto no se conserva (puede contener datos personales)."""
+        self.client.login(username=self.f1.username, password=CLAVE)
+        datos = datos_actividad(foto_antes=foto_valida('Juan Perez RUT 12345678-9.png'))
+        self.client.post(reverse('actividad_nueva', args=[self.t1.pk]), datos)
+        a = Actividad.objects.get()
+        self.assertNotIn('Juan', a.foto_antes.name)
+        self.assertRegex(a.foto_antes.name, r'^actividades/antes/[0-9a-f]{32}\.png$')
+
+    def test_cp_u29_se_quitan_metadatos_gps(self):
+        """CP-U29: los metadatos ocultos (GPS, modelo del celular) se eliminan al guardar la foto."""
+        buf = io.BytesIO()
+        img = Image.new('RGB', (20, 10), 'green')
+        exif = img.getexif()
+        exif[0x010F] = 'Apple'           # fabricante
+        exif[0x0110] = 'iPhone 16 Pro'   # modelo
+        exif[0x8825] = {1: 'S', 2: (29.0, 54.0, 0.0), 3: 'W', 4: (71.0, 15.0, 0.0)}  # GPS La Serena
+        img.save(buf, 'JPEG', exif=exif)
+        original = SimpleUploadedFile('con_gps.jpg', buf.getvalue(), content_type='image/jpeg')
+        self.assertTrue(Image.open(io.BytesIO(buf.getvalue())).getexif())   # la original sí trae EXIF
+
+        datos = datos_actividad(foto_antes=original)
+        files = {k: datos.pop(k) for k in ('foto_antes', 'foto_despues')}
+        form = ActividadForm(datos, files)
+        self.assertTrue(form.is_valid(), form.errors)
+        limpia = form.cleaned_data['foto_antes']
+        limpia.seek(0)
+        self.assertEqual(dict(Image.open(limpia).getexif()), {})          # la guardada no trae EXIF

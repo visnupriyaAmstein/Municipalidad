@@ -1,6 +1,11 @@
+import io
+import os
+
 from django import forms
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.validators import FileExtensionValidator
 from django.utils import timezone
+from PIL import Image, ImageOps
 
 from .models import Actividad
 
@@ -47,10 +52,33 @@ class ActividadForm(forms.ModelForm):
         foto = self.cleaned_data.get(campo)
         if foto and foto.size > MAX_FOTO_MB * 1024 * 1024:
             raise forms.ValidationError(f'La imagen no puede superar los {MAX_FOTO_MB} MB.')
-        return foto
+        return _quitar_metadatos(foto) if foto else foto
 
     def clean_foto_antes(self):
         return self._validar_foto('foto_antes')
 
     def clean_foto_despues(self):
         return self._validar_foto('foto_despues')
+
+
+FORMATO_POR_EXTENSION = {'.jpg': 'JPEG', '.jpeg': 'JPEG', '.png': 'PNG', '.webp': 'WEBP'}
+
+
+def _quitar_metadatos(foto):
+    """
+    Vuelve a guardar la imagen SIN metadatos (EXIF: ubicación GPS, modelo del celular, fecha, etc.).
+    Antes se aplica la orientación del EXIF para que la foto no quede girada.
+    Ley 19.628 / 21.719: minimización de datos personales.
+    """
+    extension = os.path.splitext(foto.name)[1].lower()
+    formato = FORMATO_POR_EXTENSION.get(extension, 'JPEG')
+    foto.seek(0)
+    with Image.open(foto) as original:
+        imagen = ImageOps.exif_transpose(original)  # copia nueva, sin la información EXIF
+        if formato == 'JPEG' and imagen.mode not in ('RGB', 'L'):
+            imagen = imagen.convert('RGB')
+        salida = io.BytesIO()
+        opciones = {'quality': 90} if formato in ('JPEG', 'WEBP') else {}
+        imagen.save(salida, format=formato, **opciones)
+    return SimpleUploadedFile(foto.name, salida.getvalue(),
+                              content_type=getattr(foto, 'content_type', None) or f'image/{formato.lower()}')

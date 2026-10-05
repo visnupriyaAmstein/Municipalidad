@@ -1,5 +1,7 @@
+import os
 import random
 import string
+import uuid
 
 from django.contrib.auth.models import User
 from django.db import models
@@ -19,6 +21,23 @@ def generar_codigo():
             return codigo
 
 
+def _nombre_aleatorio(carpeta, filename):
+    """
+    Guarda la foto con un nombre aleatorio (solo se conserva la extensión).
+    El nombre original puede contener datos personales, por ejemplo "Juan Pérez RUT 12.345.678-9.jpg".
+    """
+    extension = os.path.splitext(filename)[1].lower()
+    return f'actividades/{carpeta}/{uuid.uuid4().hex}{extension}'
+
+
+def ruta_foto_antes(instance, filename):
+    return _nombre_aleatorio('antes', filename)
+
+
+def ruta_foto_despues(instance, filename):
+    return _nombre_aleatorio('despues', filename)
+
+
 class Actividad(models.Model):
     """Reporte de avance que un usuario envía sobre una tarea; el administrador lo evalúa."""
 
@@ -32,8 +51,8 @@ class Actividad(models.Model):
     tarea = models.ForeignKey(Tarea, on_delete=models.PROTECT, related_name='actividades')
     descripcion = models.TextField(verbose_name='Descripción del avance')
     fecha = models.DateField(verbose_name='Fecha de realización')
-    foto_antes = models.ImageField(upload_to='actividades/antes/')
-    foto_despues = models.ImageField(upload_to='actividades/despues/')
+    foto_antes = models.ImageField(upload_to=ruta_foto_antes)
+    foto_despues = models.ImageField(upload_to=ruta_foto_despues)
     creado = models.DateTimeField(default=timezone.now, editable=False)
 
     # Evaluación del administrador
