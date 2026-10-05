@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block titulo %}Aviso de privacidad · Actividad Asignada{% endblock %}
+{% block contenido %}
+<div class="app-shell">
+  <article class="app-main card-muni pad privacidad" style="max-width: 820px; margin: 0 auto;">
+    <h1 class="page-title">Aviso de privacidad</h1>
+    <p class="page-sub mb-4">Sistema Actividad Asignada · Ilustre Municipalidad de La Serena</p>
+
+    <p>Este aviso informa a los funcionarios municipales qué datos personales trata el sistema, con qué finalidad
+      y qué derechos tienen sobre ellos, conforme a la Ley N° 19.628 sobre protección de la vida privada y a la
+      Ley N° 21.719, que la modifica.</p>
+
+    <h2>1. Responsable</h2>
+    <p>La Ilustre Municipalidad de La Serena es responsable del tratamiento de los datos registrados en el sistema.</p>
+
+    <h2>2. Datos que se tratan</h2>
+    <ul>
+      <li><strong>Datos de la cuenta:</strong> nombre, nombre de usuario y correo institucional.</li>
+      <li><strong>Reportes de trabajo:</strong> descripción del trabajo realizado, fecha y fotografías de antes y después.</li>
+      <li><strong>Registro de seguridad:</strong> fecha, hora y dirección IP de los inicios de sesión y de las acciones realizadas.</li>
+    </ul>
+    <p>Las fotografías se guardan con un nombre aleatorio y sin metadatos ocultos, como la ubicación GPS o el modelo
+      del dispositivo.</p>
+
+    <h2>3. Finalidad</h2>
+    <p>Los datos se usan únicamente para asignar tareas municipales, registrar la evidencia del trabajo realizado,
+      evaluar los reportes, calcular el avance de cada funcionario y mantener la seguridad y trazabilidad del sistema.
+      No se usan para otros fines ni se comparten con terceros.</p>
+
+    <h2>4. Quién puede ver los datos</h2>
+    <ul>
+      <li>Cada funcionario ve solo sus propias tareas y reportes.</li>
+      <li>La administración municipal ve los reportes de todos los funcionarios para evaluarlos.</li>
+      <li>El registro de seguridad solo lo consulta la administración y no puede modificarse.</li>
+    </ul>
+
+    <h2>5. Conservación</h2>
+    <p>Los reportes y sus fotografías se conservan como evidencia del trabajo municipal. Si un funcionario deja de
+      usar el sistema, su cuenta se desactiva y sus reportes se mantienen.</p>
+
+    <h2>6. Tus derechos</h2>
+    <p>Puedes solicitar el acceso a tus datos, su rectificación si son incorrectos, su supresión cuando corresponda,
+      y oponerte a su tratamiento o pedir su portabilidad, en los términos que establece la ley.
+      Para ejercerlos, dirígete a la administración municipal a cargo del sistema.</p>
+
+    <p class="mt-4 mb-0"><a href="{% url 'main' %}" class="btn btn-muni-outline">Volver</a></p>
+  </article>
+</div>
+{% endblock %}

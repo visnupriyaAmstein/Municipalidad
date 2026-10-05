@@ -235,3 +235,21 @@ class PruebasDatosEnFotos(BaseUsuario):
         limpia = form.cleaned_data['foto_antes']
         limpia.seek(0)
         self.assertEqual(dict(Image.open(limpia).getexif()), {})          # la guardada no trae EXIF
+
+
+# ---------------- Aviso de privacidad (Ley 21.719) ----------------
+class PruebasAvisoPrivacidad(BaseUsuario):
+
+    def test_cp_p01_aviso_publico_y_completo(self):
+        """CP-P01: el aviso de privacidad se puede leer sin iniciar sesión e informa datos, finalidad y derechos."""
+        r = self.client.get(reverse('privacidad'))
+        self.assertEqual(r.status_code, 200)
+        for texto in ('Datos que se tratan', 'Finalidad', 'Quién puede ver los datos', 'Tus derechos', '21.719'):
+            self.assertContains(r, texto)
+
+    def test_cp_p02_enlace_visible_en_login_y_formulario(self):
+        """CP-P02: el aviso está enlazado en el inicio de sesión, en el pie de página y en el formulario de reporte."""
+        url = reverse('privacidad')
+        self.assertContains(self.client.get(reverse('login')), f'href="{url}"', count=2)  # texto del login + pie
+        self.client.login(username=self.f1.username, password=CLAVE)
+        self.assertContains(self.client.get(reverse('actividad_nueva', args=[self.t1.pk])), f'href="{url}"')

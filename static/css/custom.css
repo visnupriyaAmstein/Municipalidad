@@ -529,3 +529,9 @@ body.modal-propio { overflow: hidden; }
 .historial-eval h2 { font-size: .9rem; color: var(--gris); font-weight: 600; margin-bottom: .4rem; }
 .historial-eval ol { margin: 0; padding-left: 1.2rem; font-size: .88rem; }
 .historial-eval li { margin-bottom: .3rem; }
+
+/* Aviso de privacidad */
+.privacidad h2 { font-size: 1.05rem; margin: 1.5rem 0 .5rem; }
+.privacidad p, .privacidad li { line-height: 1.65; }
+.pie-enlace { color: #fff; text-decoration: underline; }
+.pie-enlace:hover { color: #fff; opacity: .85; }

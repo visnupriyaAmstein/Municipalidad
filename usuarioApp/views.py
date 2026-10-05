@@ -178,3 +178,9 @@ def media_protegida(request, ruta):
         return FileResponse(campo.open('rb'))
     except FileNotFoundError:
         raise Http404
+
+
+# ---------------- Aviso de privacidad (Ley 19.628 / Ley 21.719) ----------------
+def aviso_privacidad(request):
+    """Informa qué datos personales trata el sistema, para qué y qué derechos tiene el funcionario."""
+    return render(request, 'usuario/privacidad.html')
