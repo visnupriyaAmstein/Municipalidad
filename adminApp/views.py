@@ -156,6 +156,12 @@ def por_evaluar(request):
         'pendientes': pendientes, 'seccion_activa': 'evaluar'})
 
 
+def _historial_evaluaciones(actividad):
+    """Todas las evaluaciones del reporte (de la bitácora), de la más antigua a la más reciente."""
+    return (RegistroAuditoria.objects.filter(accion=Accion.REPORTE_EVALUADO, objeto=actividad.codigo)
+            .order_by('fecha', 'id'))
+
+
 @login_required
 def actividad_admin_detalle(request, pk):
     actividad = get_object_or_404(Actividad.objects.select_related('usuario', 'tarea', 'evaluado_por'), pk=pk)
@@ -163,7 +169,8 @@ def actividad_admin_detalle(request, pk):
     siguiente = (Actividad.objects.filter(estado=Estado.PENDIENTE).exclude(pk=actividad.pk)
                  .order_by('creado').first())
     return render(request, 'administrador/actividad_detalle.html', {
-        'a': actividad, 'form': form, 'siguiente': siguiente, 'seccion_activa': 'evaluar'})
+        'a': actividad, 'form': form, 'siguiente': siguiente, 'seccion_activa': 'evaluar',
+        'historial': _historial_evaluaciones(actividad)})
 
 
 @login_required
@@ -175,7 +182,8 @@ def evaluar_actividad(request, pk):
         siguiente = (Actividad.objects.filter(estado=Estado.PENDIENTE).exclude(pk=actividad.pk)
                      .order_by('creado').first())
         return render(request, 'administrador/actividad_detalle.html', {
-            'a': actividad, 'form': form, 'siguiente': siguiente, 'seccion_activa': 'evaluar'}, status=400)
+            'a': actividad, 'form': form, 'siguiente': siguiente, 'seccion_activa': 'evaluar',
+            'historial': _historial_evaluaciones(actividad)}, status=400)
 
     estado_anterior = actividad.get_estado_display()
     with transaction.atomic():  # la evaluación y su registro de auditoría se guardan juntos

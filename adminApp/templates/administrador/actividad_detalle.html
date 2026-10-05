@@ -42,6 +42,20 @@
   </div>
   {% endif %}
 
+  {% if historial|length > 1 %}
+  <section class="historial-eval" aria-label="Historial de evaluaciones">
+    <h2>Historial de evaluaciones</h2>
+    <ol>
+      {% for h in historial %}
+      <li>
+        <span class="text-muted">{{ h.fecha|date:"d/m/Y H:i" }}</span>
+        · <strong>{{ h.username }}</strong>: {{ h.detalle }}
+      </li>
+      {% endfor %}
+    </ol>
+  </section>
+  {% endif %}
+
   <form method="post" action="{% url 'evaluar_actividad' a.pk %}" class="evaluacion" id="formEvaluar">
     {% csrf_token %}
     <h2>{% if a.estado == 'PENDIENTE' %}Evaluar reporte{% else %}Cambiar evaluación{% endif %}</h2>

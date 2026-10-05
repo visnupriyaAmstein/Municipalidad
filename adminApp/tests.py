@@ -386,3 +386,18 @@ class PruebasTrazabilidad(BaseTestCase):
         self.assertContains(r, 'funcionario')
         self.client.login(username='funcionario', password=CLAVE)
         self.assertEqual(self.client.get(reverse('bitacora')).status_code, 302)
+
+    def test_cp_t08_historial_de_evaluaciones(self):
+        """CP-T08: si una evaluación se cambia, la decisión anterior se conserva en el historial."""
+        a = self.crear_actividad(self.f1, self.t1)
+        self.client.login(username='admin', password=CLAVE)
+        url = reverse('evaluar_actividad', args=[a.pk])
+        self.client.post(url, {'estado': Estado.APROBADA, 'observacion': ''})
+        self.client.post(url, {'estado': Estado.RECHAZADA, 'observacion': 'Las fotos no corresponden'})
+        historial = RegistroAuditoria.objects.filter(accion=Accion.REPORTE_EVALUADO, objeto=a.codigo).order_by('id')
+        self.assertEqual([h.detalle.split('.')[0] for h in historial],
+                         ['En revisión → Aprobada', 'Aprobada → Rechazada'])
+        r = self.client.get(reverse('actividad_admin_detalle', args=[a.pk]))
+        self.assertContains(r, 'Historial de evaluaciones')
+        self.assertContains(r, 'En revisión → Aprobada')
+        self.assertContains(r, 'Aprobada → Rechazada')

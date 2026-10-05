@@ -523,3 +523,9 @@ body.modal-propio { overflow: hidden; }
   border-radius: 8px; padding: .2rem .55rem; font-size: .78rem; font-weight: 600; white-space: nowrap;
 }
 .chip-accion.alerta { background: var(--rojo-suave); border-color: transparent; color: var(--rojo); }
+
+/* Historial de evaluaciones de un reporte */
+.historial-eval { margin-top: 1.25rem; }
+.historial-eval h2 { font-size: .9rem; color: var(--gris); font-weight: 600; margin-bottom: .4rem; }
+.historial-eval ol { margin: 0; padding-left: 1.2rem; font-size: .88rem; }
+.historial-eval li { margin-bottom: .3rem; }
